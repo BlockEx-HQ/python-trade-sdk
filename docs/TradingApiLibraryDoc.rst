@@ -26,7 +26,7 @@ Arguments:
  
 Return value:
 """""""""""""
- Returns a ``dict`` with an element ``'response'`` that has the response object from the Trading API request. When the response HTTP status code is 200, the dict includes an element ``'access_token'`` with the value of the received access token.
+ Returns the access token of the logged in trader. Raises a ``RequestException`` in case of unsuccessful response.
  
 Example:
 """"""""
@@ -34,7 +34,7 @@ Example:
  
 ``logout()``
 ^^^^^^^^^^^^
- Performs a logout when logged in and deletes the stored access token
+ Performs a logout when logged in and deletes the stored access token.
  
 Arguments:
 """"""""""
@@ -43,7 +43,7 @@ Arguments:
 Return value:
 """""""""""""
 
- Returns a ``dict`` with an element ``'response'`` that has the response object from the Trading API request.
+ No return value. Raises a ``RequestException`` in case of unsuccessful response.
  
 Example:
 """"""""
@@ -61,7 +61,7 @@ Arguments:
  
 Return value:
 """""""""""""
- Returns a ``dict`` with an element ``'response'`` that has the response object from the Trading API request. When the response HTTP status code is 200, the dict includes an element ``'data'`` with a list of instruments. Each instrument is a ``dict`` with the following elements:
+ Returns a list of the instruments. Each instrument is a ``dict`` with the following elements:
   - ``id`` (``integer``)
   - ``description`` (``string``)
   - ``name`` (``string``)
@@ -69,12 +69,14 @@ Return value:
   - ``quoteCurrencyID`` (``integer``) - The currency you pay with, i.e. for the Bitcoin/Euro pair, quote currency is the Euro.
   - ``minOrderAmount`` (``float``) - The minimum order amount for an order. Every order having an amount less than that, will be rejected.
   - ``commissionFeePercent`` (``float``) - The percent of the commission fee when trading this instrument. The value is a decimal between 0 and 1.
+
+ Raises a ``RequestException`` in case of unsuccessful response.
  
 Example:
 """"""""
  ``instruments = trade_api.get_trader_instruments()``
  
- The value of ``instruments['data']`` is:
+ The value of ``instruments`` is:
 
  ``[{'id': 1, 'description': 'Bitcoin/Euro', 'name': 'BTC/EUR', 'baseCurrencyID': 43, 'quoteCurrencyID': 2, 'minOrderAmount': 0.0, 'commissionFeePercent': 0.02}, {'id': 2, 'description': 'Ethereum/Euro', 'name': 'ETH/EUR', 'baseCurrencyID': 46, 'quoteCurrencyID': 2, 'minOrderAmount': 9.0, 'commissionFeePercent': 0.025}, {'id': 3, 'description': 'XTN/Euro', 'name': 'XTN/EUR', 'baseCurrencyID': 45, 'quoteCurrencyID': 2, 'minOrderAmount': 0.0, 'commissionFeePercent': 0.0}, {'id': 4, 'description': 'ETH4/Euro', 'name': 'ETH4/EUR', 'baseCurrencyID': 47, 'quoteCurrencyID': 2, 'minOrderAmount': 0.0, 'commissionFeePercent': 0.0}]``
 
@@ -88,7 +90,7 @@ Arguments:
  
 Return value:
 """""""""""""
- Returns a ``dict`` with an element ``'response'`` that has the response object from the Trading API request. When the response HTTP status code is 200, the ``dict`` includes an element ``'data'`` with a list of instruments. Each instrument is a ``dict`` with the following elements:
+ Returns a  list of the instruments. Each instrument is a ``dict`` with the following elements:
   - ``id`` (``integer``)
   - ``description`` (``string``)
   - ``name`` (``string``)
@@ -97,11 +99,13 @@ Return value:
   - ``minOrderAmount`` (``float``) - The minimum order amount for an order. Every order having an amount less than that, will be rejected.
   - ``commissionFeePercent`` (``float``) - The percent of the commission fee when trading this instrument. The value is a decimal between 0 and 1.
 
+ Raises a ``RequestException`` in case of unsuccessful response.
+
 Example:
 """"""""
  ``instruments = trade_api.get_partner_instruments()``
 
- The value of ``instruments['data']`` is:
+ The value of ``instruments`` is:
 
  ``[{'id': 1, 'description': 'Bitcoin/Euro', 'name': 'BTC/EUR', 'baseCurrencyID': 43, 'quoteCurrencyID': 2, 'minOrderAmount': 0.0, 'commissionFeePercent': 0.02}, {'id': 2, 'description': 'Ethereum/Euro', 'name': 'ETH/EUR', 'baseCurrencyID': 46, 'quoteCurrencyID': 2, 'minOrderAmount': 9.0, 'commissionFeePercent': 0.025}, {'id': 3, 'description': 'XTN/Euro', 'name': 'XTN/EUR', 'baseCurrencyID': 45, 'quoteCurrencyID': 2, 'minOrderAmount': 0.0, 'commissionFeePercent': 0.0}, {'id': 4, 'description': 'ETH4/Euro', 'name': 'ETH4/EUR', 'baseCurrencyID': 47, 'quoteCurrencyID': 2, 'minOrderAmount': 0.0, 'commissionFeePercent': 0.0}]``
 
@@ -114,15 +118,15 @@ Getting orders methods
 Arguments:
 """"""""""
   - ``instrument_id`` (``integer``, *optional*) - Instrument identifier. Use ``get_trader_instruments()`` to retrieve them.
-  - ``order_type`` (``string``, *optional*) - Order type. Possible values 'Limit', 'Market' and 'Stop'.
-  - ``offer_type`` (``string``, *optional*) - Offer type. Possible values 'Bid' and 'Ask'.
+  - ``order_type`` (``OrderType``, *optional*) - Order type. Possible values ``OrderType.LIMIT``, ``OrderType.MARKET`` and ``OrderType.STOP``.
+  - ``offer_type`` (``OfferType``, *optional*) - Offer type. Possible values ``OfferType.BID`` and ``OfferType.ASK``.
   - ``status`` (``string``, *optional*) - Order status. A comma separated list of integers with possible values 10(Pending), 15(Failed), 20(Placed), 30(Rejected), 40(Cancelled), 50(PartiallyExecuted) and 60(Executed).
   - ``load_executions`` (``boolean``, *optional*) - Specifies whether to load executed trades for an order. Default value is False.
   - ``max_count`` (``integer``, *optional*) - Maximum number of items returned. Default value is 100.
  
 Return value:
 """""""""""""
- Returns a ``dict`` with an element ``'response'`` that has the response object from the Trading API request. When the response HTTP status code is 200, the ``dict`` includes an element ``'data'`` with a list of orders. Each order is a ``dict`` with the following elements:
+ Returns a list of the orders. Each order is a ``dict`` with the following elements:
   - ``orderID`` (``string``)
   - ``price`` (``float``)
   - ``initialQuantity`` (``float``)
@@ -144,12 +148,14 @@ Return value:
   - ``quoteCurrencyID`` (``integer``)
   - ``instrumentID`` (``integer``)
   - ``offerType`` (``integer``) - Possible values 1 (Bid) and 2 (Ask).
+
+ Raises a ``RequestException`` in case of unsuccessful response.
  
 Example:
 """"""""
- ``orders = trade_api.get_orders(1, 'Limit', 'Bid', '10,20', 'true', 50)``
+ ``orders = trade_api.get_orders(1, OrderType.LIMIT, OfferType.BID, '10,20', True, 50)``
 
- The value of ``orders['data']`` is:
+ The value of ``orders`` is:
  
  ``[{'orderID': '32667', 'price': 5.2, 'initialQuantity': 0.3, 'quantity': 0.3, 'dateCreated': '2017-11-06T17:32:23.03787+00:00', 'offerType': 1, 'type': 1, 'status': 20, 'instrumentID': 1, 'trades': None}]``
  
@@ -161,14 +167,14 @@ Example:
 Arguments:
 """"""""""
   - ``instrument_id`` (``integer``, *optional*) - Instrument identifier. Use ``get_partner_instruments()`` to retrieve them.
-  - ``order_type`` (``string``, *optional*) - Order type. Possible values 'Limit', 'Market' and 'Stop'.
-  - ``offer_type`` (``string``, *optional*) - Offer type. Possible values 'Bid' and 'Ask'.
+  - ``order_type`` (``OrderType``, *optional*) - Order type. Possible values ``OrderType.LIMIT``, ``OrderType.MARKET`` and ``OrderType.STOP``.
+  - ``offer_type`` (``OfferType``, *optional*) - Offer type. Possible values ``OfferType.BID`` and ``OfferType.ASK``.
   - ``status`` (``string``, *optional*) - Order status. A comma separated list of integers with possible values 10 (Pending), 15 (Failed), 20 (Placed), 30 (Rejected), 40 (Cancelled), 50 (PartiallyExecuted) and 60 (Executed).
   - ``max_count`` (``integer``, *optional*) - Maximum number of items returned. Default value is 100.
  
 Return value:
 """""""""""""
- Returns a ``dict`` with an element ``'response'`` that has the response object from the Trading API request. When the response HTTP status code is 200, the ``dict`` includes an element ``'data'`` with a list of orders. Each order is a dict with the following elements:
+ Returns a list of the orders. Each order is a dict with the following elements:
   - ``orderID`` (``string``)
   - ``price`` (``float``)
   - ``initialQuantity`` (``float``)
@@ -191,11 +197,13 @@ Return value:
   - ``instrumentID`` (``integer``)
   - ``offerType`` (``integer``) - Possible values 1 (Bid) and 2 (Ask).
 
+ Raises a ``RequestException`` in case of unsuccessful response.
+
 Example:
 """"""""
- ``orders = trade_api.get_market_ordersget_market_orders(1, 'Limit', 'Bid', '10,20', 2)``
+ ``orders = trade_api.get_market_ordersget_market_orders(1, OrderType.LIMIT, OfferType.BID, '10,20', 2)``
 
- The value of ``orders['data']`` is:
+ The value of ``orders`` is:
  
  ``[{'orderID': '32369', 'price': 2000.22, 'initialQuantity': 0.1, 'quantity': 0.1, 'dateCreated': '2017-07-06T14:11:37.446676+00:00', 'offerType': 1, 'type': 1, 'status': 30, 'instrumentID': 1, 'trades': None}, {'orderID': '32371', 'price': 2000.22, 'initialQuantity': 0.1, 'quantity': 0.1, 'dateCreated': '2017-07-06T14:12:55.680301+00:00', 'offerType': 1, 'type': 1, 'status': 30, 'instrumentID': 1, 'trades': None}]``
 
@@ -207,19 +215,19 @@ Placing/cancelling orders methods
 
 Arguments:
 """"""""""
-  - ``offer_type`` (``string``) - Offer type. Possible values 'Bid' and 'Ask'.
-  - ``order_type`` (``string``) - Order type. Possible values 'Limit', 'Market' and 'Stop'.
+  - ``offer_type`` (``OfferType``) - Offer type. Possible values ``OfferType.BID`` and ``OfferType.ASK``.
+  - ``order_type`` (``OrderType``) - Order type. Possible values ``OrderType.LIMIT``, ``OrderType.MARKET`` and ``OrderType.STOP``.
   - ``instrument_id`` (``integer``) - Instrument identifier. Use ``get_trader_instruments()`` to retrieve them.
   - ``price`` (``float``) - Price
   - ``quantity`` (``float``) - Quantity
 
 Return value:
 """""""""""""
- Returns a ``dict`` with an element ``'response'`` that has the response object from the Trading API request.
+ No return value. Raises a ``RequestException`` in case of unsuccessful response.
  
 Example:
 """"""""
- ``trade_api.create_order('Bid', 'Limit', 1, 5.2, 0.3)``
+ ``trade_api.create_order(OfferType.BID, OrderType.LIMIT, 1, 5.2, 0.3)``
 
 ``cancel_order(order_id)``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -231,7 +239,7 @@ Arguments:
 
 Return value:
 """""""""""""
- Returns a ``dict`` with an element ``'response'`` that has the response object from the Trading API request.
+ No return value. Raises a ``RequestException`` in case of unsuccessful response.
 
 Example:
 """"""""
@@ -247,7 +255,7 @@ Arguments:
 
 Return value:
 """""""""""""
- Returns a ``dict`` with an element ``'response'`` that has the response object from the Trading API request.
+ No return value. Raises a ``RequestException`` in case of unsuccessful response.
 
 Example:
 """"""""

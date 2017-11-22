@@ -1,8 +1,31 @@
 import requests
+from requests import RequestException
 from six.moves.urllib.parse import urlencode
+from enum import Enum
+
+
+class OrderType(Enum):
+    LIMIT = 'Limit'
+    MARKET = 'Market'
+    STOP = 'Stop'
+
+
+class OfferType(Enum):
+    BID = 'Bid'
+    ASK = 'Ask'
 
 
 class BlockExTradeApi:
+    LOGIN_PATH = 'oauth/token'
+    LOGOUT_PATH = 'oauth/logout'
+    GET_ORDERS_PATH = 'api/orders/get?'
+    GET_MARKET_ORDERS_PATH = 'api/orders/getMarketOrders?'
+    CREATE_ORDER_PATH = 'api/orders/create?'
+    CANCEL_ORDER_PATH = 'api/orders/cancel?'
+    CANCEL_ALL_ORDERS_PATH = 'api/orders/cancelall?'
+    GET_TRADER_INSTRUMENTS_PATH = 'api/orders/traderinstruments'
+    GET_PARTNER_INSTRUMENTS_PATH = 'api/orders/partnerinstruments?'
+
     def __init__(self, api_url, api_id, username, password):
         self.api_url = api_url
         self.api_id = api_id
@@ -18,36 +41,30 @@ class BlockExTradeApi:
             'client_id': self.api_id
         }
 
-        response = requests.post(self.api_url + 'oauth/token', data=data)
+        response = requests.post(self.api_url + self.LOGIN_PATH, data=data)
         if response.status_code == 200:
-            result = {
-                'response': response,
-                'access_token': response.json()['access_token']
-            }
+            return response.json()['access_token']
         else:
-            result = {'response': response}
-
-        return result
+            exception_message = 'Login failed.' +\
+                self.__get_error_message(response)
+            raise RequestException(exception_message)
 
     def login(self):
-        get_access_token_result = self.get_access_token()
-        if 'access_token' in get_access_token_result:
-            self.access_token = get_access_token_result['access_token']
-
-        return get_access_token_result
+        self.access_token = self.get_access_token()
+        return self.access_token
 
     def logout(self):
         if self.access_token is not None:
             headers = {'Authorization': 'Bearer ' + self.access_token}
             response = requests.post(
-                self.api_url + 'oauth/logout',
+                self.api_url + self.LOGOUT_PATH,
                 headers=headers)
             if response.status_code == 200:
                 self.access_token = None
-        else:
-            response = None
-
-        return {'response': response}
+            else:
+                exception_message = 'Logout failed.' +\
+                    self.__get_error_message(response)
+                raise RequestException(exception_message)
 
     def get_orders(
             self,
@@ -61,9 +78,13 @@ class BlockExTradeApi:
         if instrument_id is not None:
             data['instrumentID'] = instrument_id
         if order_type is not None:
-            data['orderType'] = order_type
+            if type(order_type) is not OrderType:
+                raise ValueError('order_type must be of type OrderType')
+            data['orderType'] = order_type.value
         if offer_type is not None:
-            data['offerType'] = offer_type
+            if type(offer_type) is not OfferType:
+                raise ValueError('offer_type must be of type OfferType')
+            data['offerType'] = offer_type.value
         if status is not None:
             data['status'] = status
         if load_executions is not None:
@@ -74,17 +95,14 @@ class BlockExTradeApi:
         query_string = urlencode(data)
         response = self.__make_authorized_request(
             'get',
-            self.api_url + 'api/orders/get?' + query_string)
+            self.api_url + self.GET_ORDERS_PATH + query_string)
 
         if response.status_code == 200:
-            result = {
-                'response': response,
-                'data': response.json()
-            }
+            return response.json()
         else:
-            result = {'response': response}
-
-        return result
+            exception_message = 'Failed to get the orders.' +\
+                self.__get_error_message(response)
+            raise RequestException(exception_message)
 
     def get_market_orders(
             self,
@@ -98,9 +116,13 @@ class BlockExTradeApi:
             'instrumentID': instrument_id
         }
         if order_type is not None:
-            data['orderType'] = order_type
+            if type(order_type) is not OrderType:
+                raise ValueError('order_type must be of type OrderType')
+            data['orderType'] = order_type.value
         if offer_type is not None:
-            data['offerType'] = offer_type
+            if type(offer_type) is not OfferType:
+                raise ValueError('offer_type must be of type OfferType')
+            data['offerType'] = offer_type.value
         if status is not None:
             data['status'] = status
         if max_count is not None:
@@ -108,16 +130,13 @@ class BlockExTradeApi:
 
         query_string = urlencode(data)
         response = requests.get(
-            self.api_url + 'api/orders/getMarketOrders?' + query_string)
+            self.api_url + self.GET_MARKET_ORDERS_PATH + query_string)
         if response.status_code == 200:
-            result = {
-                'response': response,
-                'data': response.json()
-            }
+            return response.json()
         else:
-            result = {'response': response}
-
-        return result
+            exception_message = 'Failed to get the market orders.' +\
+                self.__get_error_message(response)
+            raise RequestException(exception_message)
 
     def create_order(
             self,
@@ -126,9 +145,15 @@ class BlockExTradeApi:
             instrument_id,
             price,
             quantity):
+        if type(order_type) is not OrderType:
+            raise ValueError('order_type must be of type OrderType')
+
+        if type(offer_type) is not OfferType:
+            raise ValueError('offer_type must be of type OfferType')
+
         data = {
-            'offerType': offer_type,
-            'orderType': order_type,
+            'offerType': offer_type.value,
+            'orderType': order_type.value,
             'instrumentID': instrument_id,
             'price': price,
             'quantity': quantity
@@ -137,55 +162,64 @@ class BlockExTradeApi:
         query_string = urlencode(data)
         response = self.__make_authorized_request(
             'post',
-            self.api_url + 'api/orders/create?' + query_string)
-        return {'response': response}
+            self.api_url + self.CREATE_ORDER_PATH + query_string)
+
+        if response.status_code != 200:
+            exception_message = 'Failed to create an order.' +\
+                self.__get_error_message(response)
+            raise RequestException(exception_message)
 
     def cancel_order(self, order_id):
         data = {'orderID': order_id}
         query_string = urlencode(data)
         response = self.__make_authorized_request(
             'post',
-            self.api_url + 'api/orders/cancel?' + query_string)
-        return {'response': response}
+            self.api_url + self.CANCEL_ORDER_PATH + query_string)
+
+        if response.status_code != 200:
+            exception_message = 'Failed to cancel the order.' +\
+                self.__get_error_message(response)
+            raise RequestException(exception_message)
 
     def cancel_all_orders(self, instrument_id):
         data = {'instrumentID': instrument_id}
         query_string = urlencode(data)
         response = self.__make_authorized_request(
             'post',
-            self.api_url + 'api/orders/cancelall?' + query_string)
-        return {'response': response}
+            self.api_url + self.CANCEL_ALL_ORDERS_PATH + query_string)
+
+        if response.status_code != 200:
+            exception_message = 'Failed to cancel all orders.' +\
+                self.__get_error_message(response)
+            raise RequestException(exception_message)
 
     def get_trader_instruments(self):
         response = self.__make_authorized_request(
             'get',
-            self.api_url + 'api/orders/traderinstruments')
+            self.api_url + self.GET_TRADER_INSTRUMENTS_PATH)
         if response.status_code == 200:
-            result = {
-                'response': response,
-                'data': response.json()
-            }
+            return response.json()
         else:
-            result = {'response': response}
-
-        return result
+            exception_message = 'Failed to get the trader instruments.' +\
+                self.__get_error_message(response)
+            raise RequestException(exception_message)
 
     def get_partner_instruments(self):
         data = {'apiID': self.api_id}
         query_string = urlencode(data)
         response = requests.get(
-            self.api_url + 'api/orders/partnerinstruments?' + query_string)
+            self.api_url + self.GET_PARTNER_INSTRUMENTS_PATH + query_string)
         if response.status_code == 200:
-            result = {
-                'response': response,
-                'data': response.json()
-            }
+            return response.json()
         else:
-            result = {'response': response}
-
-        return result
+            exception_message = 'Failed to get the partner instruments.' +\
+                self.__get_error_message(response)
+            raise RequestException(exception_message)
 
     def __make_authorized_request(self, request_type, url):
+        request_type = request_type.lower()
+        assert request_type in ('get', 'post')
+
         if self.access_token is None:  # Not logged in
             self.login()
 
@@ -195,8 +229,6 @@ class BlockExTradeApi:
             response = requests.get(url, headers=headers)
         elif request_type == 'post':
             response = requests.post(url, headers=headers)
-        else:
-            raise ValueError('The request type must be get or post')
 
         # If the access token has expired, a new login is required
         if self.__is_unauthorized_response(response):
@@ -219,3 +251,12 @@ class BlockExTradeApi:
                     return True
 
         return False
+
+    def __get_error_message(self, response):
+        response_json = response.json()
+        if 'error' in response_json:
+            return ' Message: ' + response_json['error']
+        elif 'message' in response_json:
+            return ' Message: ' + response_json['message']
+        else:
+            return ''

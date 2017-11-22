@@ -1,21 +1,18 @@
 import requests
 from requests import Response
+from requests import RequestException
 from six.moves.urllib.parse import urlencode
 from unittest import TestCase
 from mock import Mock
 from BlockExTradeApi import BlockExTradeApi
+from BlockExTradeApi import OrderType
+from BlockExTradeApi import OfferType
 
 
 # Unit tests
 class TestTradeApi(TestCase):
     def setUp(self):
-        response = Response()
-        response.status_code = 200
-        response._content = '{"access_token":"SomeAccessToken"}'.encode()
-        self.get_access_token_mock = Mock(return_value={
-                'response': response,
-                'access_token': 'SomeAccessToken'
-            })
+        self.get_access_token_mock = Mock(return_value='SomeAccessToken')
 
         self.trade_api = BlockExTradeApi(
             'https://test.api.url/',
@@ -59,13 +56,7 @@ class TestTradeApiLogin(TestCase):
                 'client_id': 'CorrectApiID'
             })
 
-        self.assertIn('response', login_response)
-        self.assertEqual(login_response['response'].status_code, 200)
-        self.assertEqual(login_response['response'].content,
-                         '{"access_token":"SomeAccessToken"}'.encode())
-
-        self.assertIn('access_token', login_response)
-        self.assertEqual(login_response['access_token'], 'SomeAccessToken')
+        self.assertEqual(login_response, 'SomeAccessToken')
 
     def test_unauthorized_login(self):
         self.trade_api = BlockExTradeApi(
@@ -80,7 +71,8 @@ class TestTradeApiLogin(TestCase):
         post_mock = Mock(return_value=response)
         requests.post = post_mock
 
-        login_response = self.trade_api.login()
+        with self.assertRaises(RequestException):
+            self.trade_api.login()
 
         post_mock.assert_called_once_with(
             'https://test.api.url/oauth/token',
@@ -90,13 +82,6 @@ class TestTradeApiLogin(TestCase):
                 'password': 'WrongPassword',
                 'client_id': 'CorrectApiID'
             })
-
-        self.assertIn('response', login_response)
-        self.assertEqual(login_response['response'].status_code, 400)
-        self.assertEqual(login_response['response'].content,
-                         '{"error":"invalid_client"}'.encode())
-
-        self.assertNotIn('access_token', login_response)
 
 
 class TestTradeApiLogout(TestTradeApi):
@@ -109,14 +94,12 @@ class TestTradeApiLogout(TestTradeApi):
         post_mock = Mock(return_value=response)
         requests.post = post_mock
 
-        logout_response = self.trade_api.logout()
+        self.trade_api.logout()
 
         post_mock.assert_called_once_with(
             'https://test.api.url/oauth/logout',
             headers={'Authorization': 'Bearer SomeAccessToken'})
 
-        self.assertIn('response', logout_response)
-        self.assertEqual(logout_response['response'].status_code, 200)
         self.assertIsNone(self.trade_api.access_token)
 
     def test_logout_when_not_logged_in(self):
@@ -125,12 +108,9 @@ class TestTradeApiLogout(TestTradeApi):
 
         self.assertIsNone(self.trade_api.access_token)
 
-        logout_response = self.trade_api.logout()
+        self.trade_api.logout()
 
         post_mock.assert_not_called()
-
-        self.assertIn('response', logout_response)
-        self.assertIsNone(logout_response['response'])
 
 
 class TestTradeApiGetOrders(TestTradeApi):
@@ -167,14 +147,7 @@ class TestTradeApiGetOrders(TestTradeApi):
             'https://test.api.url/api/orders/get?',
             headers={'Authorization': 'Bearer SomeAccessToken'})
 
-        self.assertIn('response', get_orders_response)
-        self.assertEqual(get_orders_response['response'].status_code, 200)
-        self.assertEqual(get_orders_response['response'].content,
-                         orders_list.encode())
-
-        self.assertIn('data', get_orders_response)
-        self.assertEqual(get_orders_response['data'],
-                         response.json())
+        self.assertEqual(get_orders_response, response.json())
 
     def test_successful_get_orders_with_filter(self):
         response = Response()
@@ -204,14 +177,14 @@ class TestTradeApiGetOrders(TestTradeApi):
         requests.get = get_mock
 
         get_orders_response = self.trade_api.get_orders(
-            1, 'Limit', 'Bid', '10,20', 'true', 50)
+            1, OrderType.LIMIT, OfferType.BID, '10,20', True, 50)
 
         data = {}
         data['instrumentID'] = 1
         data['orderType'] = 'Limit'
         data['offerType'] = 'Bid'
         data['status'] = '10,20'
-        data['loadExecutions'] = 'true'
+        data['loadExecutions'] = 'True'
         data['maxCount'] = 50
 
         query_string = urlencode(data)
@@ -219,14 +192,7 @@ class TestTradeApiGetOrders(TestTradeApi):
             'https://test.api.url/api/orders/get?' + query_string,
             headers={'Authorization': 'Bearer SomeAccessToken'})
 
-        self.assertIn('response', get_orders_response)
-        self.assertEqual(get_orders_response['response'].status_code, 200)
-        self.assertEqual(get_orders_response['response'].content,
-                         orders_list.encode())
-
-        self.assertIn('data', get_orders_response)
-        self.assertEqual(get_orders_response['data'],
-                         response.json())
+        self.assertEqual(get_orders_response, response.json())
 
     def test_unsuccessful_get_orders(self):
         response = Response()
@@ -235,18 +201,12 @@ class TestTradeApiGetOrders(TestTradeApi):
         get_mock = Mock(return_value=response)
         requests.get = get_mock
 
-        get_orders_response = self.trade_api.get_orders()
+        with self.assertRaises(RequestException):
+            self.trade_api.get_orders()
 
         get_mock.assert_called_once_with(
             'https://test.api.url/api/orders/get?',
             headers={'Authorization': 'Bearer SomeAccessToken'})
-
-        self.assertIn('response', get_orders_response)
-        self.assertEqual(get_orders_response['response'].status_code, 400)
-        self.assertEqual(get_orders_response['response'].content,
-                         '{"message": "Unknown trader"}'.encode())
-
-        self.assertNotIn('data', get_orders_response)
 
 
 class TestTradeApiGetMarketOrders(TestTradeApi):
@@ -288,15 +248,7 @@ class TestTradeApiGetMarketOrders(TestTradeApi):
         get_mock.assert_called_once_with(
             'https://test.api.url/api/orders/getMarketOrders?' + query_string)
 
-        self.assertIn('response', get_market_orders_response)
-        self.assertEqual(get_market_orders_response['response'].status_code,
-                         200)
-        self.assertEqual(get_market_orders_response['response'].content,
-                         market_orders_list.encode())
-
-        self.assertIn('data', get_market_orders_response)
-        self.assertEqual(get_market_orders_response['data'],
-                         response.json())
+        self.assertEqual(get_market_orders_response, response.json())
 
     def test_successful_get_market_orders_with_filter(self):
         response = Response()
@@ -326,7 +278,7 @@ class TestTradeApiGetMarketOrders(TestTradeApi):
         requests.get = get_mock
 
         get_market_orders_response = self.trade_api.get_market_orders(
-            1, 'Limit', 'Bid', '10,20', 50)
+            1, OrderType.LIMIT, OfferType.BID, '10,20', 50)
 
         data = {
             'apiID': 'CorrectApiID',
@@ -341,15 +293,7 @@ class TestTradeApiGetMarketOrders(TestTradeApi):
         get_mock.assert_called_once_with(
             'https://test.api.url/api/orders/getMarketOrders?' + query_string)
 
-        self.assertIn('response', get_market_orders_response)
-        self.assertEqual(get_market_orders_response['response'].status_code,
-                         200)
-        self.assertEqual(get_market_orders_response['response'].content,
-                         market_orders_list.encode())
-
-        self.assertIn('data', get_market_orders_response)
-        self.assertEqual(get_market_orders_response['data'],
-                         response.json())
+        self.assertEqual(get_market_orders_response, response.json())
 
     def test_unsuccessful_get_market_orders(self):
         response = Response()
@@ -359,7 +303,9 @@ class TestTradeApiGetMarketOrders(TestTradeApi):
         requests.get = get_mock
 
         self.trade_api.api_id = 'IncorrectApiID'
-        get_orders_response = self.trade_api.get_market_orders(1)
+
+        with self.assertRaises(RequestException):
+            self.trade_api.get_market_orders(1)
 
         data = {
             'apiID': 'IncorrectApiID',
@@ -370,23 +316,19 @@ class TestTradeApiGetMarketOrders(TestTradeApi):
         get_mock.assert_called_once_with(
             'https://test.api.url/api/orders/getMarketOrders?' + query_string)
 
-        self.assertIn('response', get_orders_response)
-        self.assertEqual(get_orders_response['response'].status_code, 400)
-        self.assertEqual(get_orders_response['response'].content,
-                         '{"message": "Invalid partner API id"}'.encode())
-
-        self.assertNotIn('data', get_orders_response)
-
 
 class TestTradeApiCreateOrder(TestTradeApi):
-    def test_create_order(self):
+    def test_successful_create_order(self):
         response = Response()
         response.status_code = 200
         post_mock = Mock(return_value=response)
         requests.post = post_mock
 
-        create_order_response = self.trade_api.create_order(
-            'Bid', 'Limit', 1, 15.2, 3.7)
+        self.trade_api.create_order(OfferType.BID,
+                                    OrderType.LIMIT,
+                                    1,
+                                    15.2,
+                                    3.7)
 
         data = {
             'offerType': 'Bid',
@@ -401,43 +343,88 @@ class TestTradeApiCreateOrder(TestTradeApi):
             'https://test.api.url/api/orders/create?' + query_string,
             headers={'Authorization': 'Bearer SomeAccessToken'})
 
-        self.assertIn('response', create_order_response)
-        self.assertEqual(create_order_response['response'].status_code, 200)
+    def test_unsuccessful_create_order(self):
+        response = Response()
+        response.status_code = 400
+        response._content = '{"message": "Unknown trader"}'.encode()
+        post_mock = Mock(return_value=response)
+        requests.post = post_mock
+
+        with self.assertRaises(RequestException):
+            self.trade_api.create_order(OfferType.BID,
+                                        OrderType.LIMIT,
+                                        1,
+                                        15.2,
+                                        3.7)
+
+        data = {
+            'offerType': 'Bid',
+            'orderType': 'Limit',
+            'instrumentID': 1,
+            'price': 15.2,
+            'quantity': 3.7
+        }
+
+        query_string = urlencode(data)
+        post_mock.assert_called_once_with(
+            'https://test.api.url/api/orders/create?' + query_string,
+            headers={'Authorization': 'Bearer SomeAccessToken'})
 
 
 class TestTradeApiCancelOrder(TestTradeApi):
-    def test_cancel_order(self):
+    def test_successful_cancel_order(self):
         response = Response()
         response.status_code = 200
         post_mock = Mock(return_value=response)
         requests.post = post_mock
 
-        cancel_order_response = self.trade_api.cancel_order(32598)
+        self.trade_api.cancel_order(32598)
 
         post_mock.assert_called_once_with(
             'https://test.api.url/api/orders/cancel?orderID=32598',
             headers={'Authorization': 'Bearer SomeAccessToken'})
 
-        self.assertIn('response', cancel_order_response)
-        self.assertEqual(cancel_order_response['response'].status_code, 200)
+    def test_unsuccessful_cancel_order(self):
+        response = Response()
+        response.status_code = 400
+        response._content = '{"message": "Unknown trader"}'.encode()
+        post_mock = Mock(return_value=response)
+        requests.post = post_mock
+
+        with self.assertRaises(RequestException):
+            self.trade_api.cancel_order(32598)
+
+        post_mock.assert_called_once_with(
+            'https://test.api.url/api/orders/cancel?orderID=32598',
+            headers={'Authorization': 'Bearer SomeAccessToken'})
 
 
 class TestTradeApiCancelAllOrders(TestTradeApi):
-    def test_cancel_all_orders(self):
+    def test_successful_cancel_all_orders(self):
         response = Response()
         response.status_code = 200
         post_mock = Mock(return_value=response)
         requests.post = post_mock
 
-        cancel_all_orders_response = self.trade_api.cancel_all_orders(1)
+        self.trade_api.cancel_all_orders(1)
 
         post_mock.assert_called_once_with(
             'https://test.api.url/api/orders/cancelall?instrumentID=1',
             headers={'Authorization': 'Bearer SomeAccessToken'})
 
-        self.assertIn('response', cancel_all_orders_response)
-        self.assertEqual(cancel_all_orders_response['response'].status_code,
-                         200)
+    def test_unsuccessful_cancel_all_orders(self):
+        response = Response()
+        response.status_code = 400
+        response._content = '{"message": "Unknown trader"}'.encode()
+        post_mock = Mock(return_value=response)
+        requests.post = post_mock
+
+        with self.assertRaises(RequestException):
+            self.trade_api.cancel_all_orders(1)
+
+        post_mock.assert_called_once_with(
+            'https://test.api.url/api/orders/cancelall?instrumentID=1',
+            headers={'Authorization': 'Bearer SomeAccessToken'})
 
 
 class TestTradeApiGetTraderInstruments(TestTradeApi):
@@ -469,17 +456,7 @@ class TestTradeApiGetTraderInstruments(TestTradeApi):
             'https://test.api.url/api/orders/traderinstruments',
             headers={'Authorization': 'Bearer SomeAccessToken'})
 
-        self.assertIn('response', get_trader_instruments_response)
-        self.assertEqual(
-            get_trader_instruments_response['response'].status_code,
-            200)
-        self.assertEqual(
-            get_trader_instruments_response['response'].content,
-            instruments_list.encode())
-
-        self.assertIn('data', get_trader_instruments_response)
-        self.assertEqual(get_trader_instruments_response['data'],
-                         response.json())
+        self.assertEqual(get_trader_instruments_response, response.json())
 
     def test_unsuccessful_get_trader_instruments(self):
         response = Response()
@@ -488,22 +465,12 @@ class TestTradeApiGetTraderInstruments(TestTradeApi):
         get_mock = Mock(return_value=response)
         requests.get = get_mock
 
-        get_trader_instruments_response =\
+        with self.assertRaises(RequestException):
             self.trade_api.get_trader_instruments()
 
         get_mock.assert_called_once_with(
             'https://test.api.url/api/orders/traderinstruments',
             headers={'Authorization': 'Bearer SomeAccessToken'})
-
-        self.assertIn('response', get_trader_instruments_response)
-        self.assertEqual(
-            get_trader_instruments_response['response'].status_code,
-            400)
-        self.assertEqual(
-            get_trader_instruments_response['response'].content,
-            '{"message": "Unknown trader"}'.encode())
-
-        self.assertNotIn('data', get_trader_instruments_response)
 
 
 class TestTradeApiGetPartnerInstruments(TestTradeApi):
@@ -533,16 +500,7 @@ class TestTradeApiGetPartnerInstruments(TestTradeApi):
             'https://test.api.url/api/orders/' +
             'partnerinstruments?apiID=CorrectApiID')
 
-        self.assertIn('response', get_partner_instruments_response)
-        self.assertEqual(
-            get_partner_instruments_response['response'].status_code,
-            200)
-        self.assertEqual(
-            get_partner_instruments_response['response'].content,
-            instruments_list.encode())
-
-        self.assertIn('data', get_partner_instruments_response)
-        self.assertEqual(get_partner_instruments_response['data'],
+        self.assertEqual(get_partner_instruments_response,
                          response.json())
 
     def test_unsuccessful_get_partner_instruments(self):
@@ -553,22 +511,12 @@ class TestTradeApiGetPartnerInstruments(TestTradeApi):
         requests.get = get_mock
 
         self.trade_api.api_id = 'IncorrectApiID'
-        get_partner_instruments_response =\
+        with self.assertRaises(RequestException):
             self.trade_api.get_partner_instruments()
 
         get_mock.assert_called_once_with(
             'https://test.api.url/api/orders/' +
             'partnerinstruments?apiID=IncorrectApiID')
-
-        self.assertIn('response', get_partner_instruments_response)
-        self.assertEqual(
-            get_partner_instruments_response['response'].status_code,
-            400)
-        self.assertEqual(
-            get_partner_instruments_response['response'].content,
-            '{"message": "Invalid partner"}'.encode())
-
-        self.assertNotIn('data', get_partner_instruments_response)
 
 
 class TestTradeApiMakeAuthorizedRequest(TestTradeApi):
@@ -611,13 +559,13 @@ class TestTradeApiMakeAuthorizedRequest(TestTradeApi):
         self.assertEqual(make_authorized_request_response.status_code, 200)
 
     def test_make_authorized_invalid_request_when_not_logged_in(self):
-        with self.assertRaises(ValueError):
+        with self.assertRaises(AssertionError):
             self.trade_api._BlockExTradeApi__make_authorized_request(
                 'WrongType',
                 'ResourceURL')
 
-        self.get_access_token_mock.assert_called_once()
-        self.assertEqual(self.trade_api.access_token, 'SomeAccessToken')
+        self.get_access_token_mock.assert_not_called()
+        self.assertIsNone(self.trade_api.access_token)
 
     def test_make_authorized_get_request_when_logged_in(self):
         self.assertIsNone(self.trade_api.access_token)
@@ -667,7 +615,7 @@ class TestTradeApiMakeAuthorizedRequest(TestTradeApi):
         self.assertIsNone(self.trade_api.access_token)
         self.trade_api.login()
 
-        with self.assertRaises(ValueError):
+        with self.assertRaises(AssertionError):
             self.trade_api._BlockExTradeApi__make_authorized_request(
                 'WrongType',
                 'ResourceURL')

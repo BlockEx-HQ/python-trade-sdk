@@ -1,13 +1,13 @@
 # Integration tests configuration
 
 # The API URL, e.g. https://api.blockex.com/
-api_url = ''
+API_URL = ''
 
 # The Partner's API ID
-api_id = ''
+API_ID = ''
 
 # The Trader''s username
-username = ''
+USERNAME = ''
 
 # The Trader''s password
-password = ''
+PASSWORD = ''

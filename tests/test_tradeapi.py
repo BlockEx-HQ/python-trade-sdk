@@ -1,18 +1,22 @@
+from unittest import TestCase
 import requests
 from requests import Response
 from requests import RequestException
 from six.moves.urllib.parse import urlencode
-from unittest import TestCase
 from mock import Mock
-from BlockExTradeApi import BlockExTradeApi
-from BlockExTradeApi import OrderType
-from BlockExTradeApi import OfferType
+from blockex.tradeapi import BlockExTradeApi
+from blockex.tradeapi import OrderType
+from blockex.tradeapi import OfferType
 
 
 # Unit tests
 class TestTradeApi(TestCase):
     def setUp(self):
-        self.get_access_token_mock = Mock(return_value='SomeAccessToken')
+        self.get_access_token_mock = Mock(return_value=
+            {
+                'access_token': 'SomeAccessToken',
+                'expires_in': 86399,
+            })
 
         self.trade_api = BlockExTradeApi(
             'https://test.api.url/',
@@ -32,16 +36,17 @@ class TestTradeApiInit(TestTradeApi):
 
 
 class TestTradeApiLogin(TestCase):
-    def test_authorized_login(self):
+    def setUp(self):
         self.trade_api = BlockExTradeApi(
             'https://test.api.url/',
             'CorrectApiID',
             'CorrectUsername',
             'CorrectPassword')
 
+    def test_authorized_login(self):
         response = Response()
         response.status_code = 200
-        response._content = '{"access_token":"SomeAccessToken"}'.encode()
+        response._content = '{"access_token":"SomeAccessToken", "expires_in":86399}'.encode()
         post_mock = Mock(return_value=response)
         requests.post = post_mock
 
@@ -117,26 +122,27 @@ class TestTradeApiGetOrders(TestTradeApi):
     def test_successful_get_orders_without_filter(self):
         response = Response()
         response.status_code = 200
-        orders_list = '[{"orderID": "32592",'
-        orders_list += '"price": 13.40,'
-        orders_list += '"initialQuantity": 32.50,'
-        orders_list += '"quantity": 32.50,'
-        orders_list += '"dateCreated": "2017-10-09T09:32:24.735659+00:00",'
-        orders_list += '"offerType": 1,'
-        orders_list += '"type": 1,'
-        orders_list += '"status": 15,'
-        orders_list += '"instrumentID": 1,'
-        orders_list += '"trades": null},'
-        orders_list += '{"orderID": "32593",'
-        orders_list += '"price": 11.34,'
-        orders_list += '"initialQuantity": 26.00,'
-        orders_list += '"quantity": 26.00,'
-        orders_list += '"dateCreated": "2017-10-09T09:35:10.61228+00:00",'
-        orders_list += '"offerType": 1,'
-        orders_list += '"type": 1,'
-        orders_list += '"status": 20,'
-        orders_list += '"instrumentID": 1,'
-        orders_list += '"trades": null}]'
+        orders_list = """
+            [{"orderID": "32592",
+            "price": 13.40,
+            "initialQuantity": 32.50,
+            "quantity": 32.50,
+            "dateCreated": "2017-10-09T09:32:24.735659+00:00",
+            "offerType": 1,
+            "type": 1,
+            "status": 15,
+            "instrumentID": 1,
+            "trades": null},
+            {"orderID": "32593",
+            "price": 11.34,
+            "initialQuantity": 26.00,
+            "quantity": 26.00,
+            "dateCreated": "2017-10-09T09:35:10.61228+00:00",
+            "offerType": 1,
+            "type": 1,
+            "status": 20,
+            "instrumentID": 1,
+            "trades": null}]"""
         response._content = orders_list.encode()
         get_mock = Mock(return_value=response)
         requests.get = get_mock
@@ -152,26 +158,27 @@ class TestTradeApiGetOrders(TestTradeApi):
     def test_successful_get_orders_with_filter(self):
         response = Response()
         response.status_code = 200
-        orders_list = '[{"orderID": "32592",'
-        orders_list += '"price": 13.40,'
-        orders_list += '"initialQuantity": 32.50,'
-        orders_list += '"quantity": 32.50,'
-        orders_list += '"dateCreated": "2017-10-09T09:32:24.735659+00:00",'
-        orders_list += '"offerType": 1,'
-        orders_list += '"type": 1,'
-        orders_list += '"status": 15,'
-        orders_list += '"instrumentID": 1,'
-        orders_list += '"trades": null},'
-        orders_list += '{"orderID": "32593",'
-        orders_list += '"price": 11.34,'
-        orders_list += '"initialQuantity": 26.00,'
-        orders_list += '"quantity": 26.00,'
-        orders_list += '"dateCreated": "2017-10-09T09:35:10.61228+00:00",'
-        orders_list += '"offerType": 1,'
-        orders_list += '"type": 1,'
-        orders_list += '"status": 20,'
-        orders_list += '"instrumentID": 1,'
-        orders_list += '"trades": null}]'
+        orders_list = """
+            [{"orderID": "32592",
+            "price": 13.40,
+            "initialQuantity": 32.50,
+            "quantity": 32.50,
+            "dateCreated": "2017-10-09T09:32:24.735659+00:00",
+            "offerType": 1,
+            "type": 1,
+            "status": 15,
+            "instrumentID": 1,
+            "trades": null},
+            {"orderID": "32593",
+            "price": 11.34,
+            "initialQuantity": 26.00,
+            "quantity": 26.00,
+            "dateCreated": "2017-10-09T09:35:10.61228+00:00",
+            "offerType": 1,
+            "type": 1,
+            "status": 20,
+            "instrumentID": 1,
+            "trades": null}]"""
         response._content = orders_list.encode()
         get_mock = Mock(return_value=response)
         requests.get = get_mock
@@ -213,26 +220,27 @@ class TestTradeApiGetMarketOrders(TestTradeApi):
     def test_successful_get_market_orders_without_filter(self):
         response = Response()
         response.status_code = 200
-        market_orders_list = '[{"orderID": "31635",'
-        market_orders_list += '"price": 5.00,'
-        market_orders_list += '"initialQuantity": 270.00,'
-        market_orders_list += '"quantity": 0.00,'
-        market_orders_list += '"dateCreated": "2017-05-14T09:19:53.335+00:00",'
-        market_orders_list += '"offerType": 1,'
-        market_orders_list += '"type": 1,'
-        market_orders_list += '"status": 40,'
-        market_orders_list += '"instrumentID": 1,'
-        market_orders_list += '"trades": null},'
-        market_orders_list += '{"orderID": "31636",'
-        market_orders_list += '"price": 1.00,'
-        market_orders_list += '"initialQuantity": 260.00,'
-        market_orders_list += '"quantity": 0.00,'
-        market_orders_list += '"dateCreated": "2017-05-14T09:19:55.782+00:00",'
-        market_orders_list += '"offerType": 1,'
-        market_orders_list += '"type": 1,'
-        market_orders_list += '"status": 40,'
-        market_orders_list += '"instrumentID": 1,'
-        market_orders_list += '"trades": null}]'
+        market_orders_list = """
+            [{"orderID": "31635",
+            "price": 5.00,
+            "initialQuantity": 270.00,
+            "quantity": 0.00,
+            "dateCreated": "2017-05-14T09:19:53.335+00:00",
+            "offerType": 1,
+            "type": 1,
+            "status": 40,
+            "instrumentID": 1,
+            "trades": null},
+            {"orderID": "31636",
+            "price": 1.00,
+            "initialQuantity": 260.00,
+            "quantity": 0.00,
+            "dateCreated": "2017-05-14T09:19:55.782+00:00",
+            "offerType": 1,
+            "type": 1,
+            "status": 40,
+            "instrumentID": 1,
+            "trades": null}]"""
         response._content = market_orders_list.encode()
         get_mock = Mock(return_value=response)
         requests.get = get_mock
@@ -253,26 +261,27 @@ class TestTradeApiGetMarketOrders(TestTradeApi):
     def test_successful_get_market_orders_with_filter(self):
         response = Response()
         response.status_code = 200
-        market_orders_list = '[{"orderID": "31635",'
-        market_orders_list += '"price": 5.00,'
-        market_orders_list += '"initialQuantity": 270.00,'
-        market_orders_list += '"quantity": 0.00,'
-        market_orders_list += '"dateCreated": "2017-05-14T09:19:53.335+00:00",'
-        market_orders_list += '"offerType": 1,'
-        market_orders_list += '"type": 1,'
-        market_orders_list += '"status": 40,'
-        market_orders_list += '"instrumentID": 1,'
-        market_orders_list += '"trades": null},'
-        market_orders_list += '{"orderID": "31636",'
-        market_orders_list += '"price": 1.00,'
-        market_orders_list += '"initialQuantity": 260.00,'
-        market_orders_list += '"quantity": 0.00,'
-        market_orders_list += '"dateCreated": "2017-05-14T09:19:55.782+00:00",'
-        market_orders_list += '"offerType": 1,'
-        market_orders_list += '"type": 1,'
-        market_orders_list += '"status": 40,'
-        market_orders_list += '"instrumentID": 1,'
-        market_orders_list += '"trades": null}]'
+        market_orders_list = """
+            [{"orderID": "31635",
+            "price": 5.00,
+            "initialQuantity": 270.00,
+            "quantity": 0.00,
+            "dateCreated": "2017-05-14T09:19:53.335+00:00",
+            "offerType": 1,
+            "type": 1,
+            "status": 40,
+            "instrumentID": 1,
+            "trades": null},
+            {"orderID": "31636",
+            "price": 1.00,
+            "initialQuantity": 260.00,
+            "quantity": 0.00,
+            "dateCreated": "2017-05-14T09:19:55.782+00:00",
+            "offerType": 1,
+            "type": 1,
+            "status": 40,
+            "instrumentID": 1,
+            "trades": null}]"""
         response._content = market_orders_list.encode()
         get_mock = Mock(return_value=response)
         requests.get = get_mock
@@ -431,20 +440,21 @@ class TestTradeApiGetTraderInstruments(TestTradeApi):
     def test_successful_get_trader_instruments(self):
         response = Response()
         response.status_code = 200
-        instruments_list = '[{"id": 1,'
-        instruments_list += '"description": "Bitcoin/Euro",'
-        instruments_list += '"name": "BTC/EUR",'
-        instruments_list += '"baseCurrencyID": 43,'
-        instruments_list += '"quoteCurrencyID": 2,'
-        instruments_list += '"minOrderAmount": 0.000000000000,'
-        instruments_list += '"commissionFeePercent": 0.020000000000},'
-        instruments_list += '{"id": 2,'
-        instruments_list += '"description": "Ethereum/Euro",'
-        instruments_list += '"name": "ETH/EUR",'
-        instruments_list += '"baseCurrencyID": 46,'
-        instruments_list += '"quoteCurrencyID": 2,'
-        instruments_list += '"minOrderAmount": 9.000000000000,'
-        instruments_list += '"commissionFeePercent": 0.025000000000}]'
+        instruments_list = """
+            [{"id": 1,
+            "description": "Bitcoin/Euro",
+            "name": "BTC/EUR",
+            "baseCurrencyID": 43,
+            "quoteCurrencyID": 2,
+            "minOrderAmount": 0.000000000000,
+            "commissionFeePercent": 0.020000000000},
+            {"id": 2,
+            "description": "Ethereum/Euro",
+            "name": "ETH/EUR",
+            "baseCurrencyID": 46,
+            "quoteCurrencyID": 2,
+            "minOrderAmount": 9.000000000000,
+            "commissionFeePercent": 0.025000000000}]"""
         response._content = instruments_list.encode()
         get_mock = Mock(return_value=response)
         requests.get = get_mock
@@ -477,18 +487,21 @@ class TestTradeApiGetPartnerInstruments(TestTradeApi):
     def test_successful_get_partner_instruments(self):
         response = Response()
         response.status_code = 200
-        instruments_list = '[{"id": 1,"description": "Bitcoin/Euro",'
-        instruments_list += '"name": "BTC/EUR",'
-        instruments_list += '"baseCurrencyID": 43,'
-        instruments_list += '"quoteCurrencyID": 2,'
-        instruments_list += '"minOrderAmount": 0.000000000000,'
-        instruments_list += '"commissionFeePercent": 0.020000000000},'
-        instruments_list += '{"id": 2,"description": "Ethereum/Euro",'
-        instruments_list += '"name": "ETH/EUR",'
-        instruments_list += '"baseCurrencyID": 46,'
-        instruments_list += '"quoteCurrencyID": 2,'
-        instruments_list += '"minOrderAmount": 9.000000000000,'
-        instruments_list += '"commissionFeePercent": 0.025000000000}]'
+        instruments_list = """
+            [{"id": 1,
+            "description": "Bitcoin/Euro",
+            "name": "BTC/EUR",
+            "baseCurrencyID": 43,
+            "quoteCurrencyID": 2,
+            "minOrderAmount": 0.000000000000,
+            "commissionFeePercent": 0.020000000000},
+            {"id": 2,
+            "description": "Ethereum/Euro",
+            "name": "ETH/EUR",
+            "baseCurrencyID": 46,
+            "quoteCurrencyID": 2,
+            "minOrderAmount": 9.000000000000,
+            "commissionFeePercent": 0.025000000000}]"""
         response._content = instruments_list.encode()
         get_mock = Mock(return_value=response)
         requests.get = get_mock
@@ -628,10 +641,7 @@ class TestTradeApiMakeAuthorizedRequest(TestTradeApi):
         self.trade_api.login()
 
         response = Response()
-        response.status_code = 401
-        response._content =\
-            '{"message": "Authorization has been denied for this request."}'\
-                .encode()
+        response.status_code = 200
         get_mock = Mock(return_value=response)
         requests.get = get_mock
 
@@ -640,24 +650,21 @@ class TestTradeApiMakeAuthorizedRequest(TestTradeApi):
                 'get',
                 'ResourceURL')
 
-        self.assertEqual(self.get_access_token_mock.call_count, 2)
+        self.assertEqual(self.get_access_token_mock.call_count, 1)
         self.assertEqual(self.trade_api.access_token, 'SomeAccessToken')
 
         get_mock.assert_called_with(
             'ResourceURL',
             headers={'Authorization': 'Bearer SomeAccessToken'})
-        self.assertEqual(get_mock.call_count, 2)
-        self.assertEqual(make_authorized_request_response.status_code, 401)
+        self.assertEqual(get_mock.call_count, 1)
+        self.assertEqual(make_authorized_request_response.status_code, 200)
 
     def test_make_authorized_post_request_when_token_expired(self):
         self.assertIsNone(self.trade_api.access_token)
         self.trade_api.login()
 
         response = Response()
-        response.status_code = 401
-        response._content =\
-            '{"message": "Authorization has been denied for this request."}'\
-                .encode()
+        response.status_code = 200
         post_mock = Mock(return_value=response)
         requests.post = post_mock
 
@@ -665,11 +672,11 @@ class TestTradeApiMakeAuthorizedRequest(TestTradeApi):
             self.trade_api._BlockExTradeApi__make_authorized_request(
                 'post', 'ResourceURL')
 
-        self.assertEqual(self.get_access_token_mock.call_count, 2)
+        self.assertEqual(self.get_access_token_mock.call_count, 1)
         self.assertEqual(self.trade_api.access_token, 'SomeAccessToken')
 
         post_mock.assert_called_with(
             'ResourceURL',
             headers={'Authorization': 'Bearer SomeAccessToken'})
-        self.assertEqual(post_mock.call_count, 2)
-        self.assertEqual(make_authorized_request_response.status_code, 401)
+        self.assertEqual(post_mock.call_count, 1)
+        self.assertEqual(make_authorized_request_response.status_code, 200)

@@ -1,32 +1,32 @@
+from unittest import TestCase
 import test_integration_config
 from requests import RequestException
-from unittest import TestCase
-from BlockExTradeApi import BlockExTradeApi
-from BlockExTradeApi import OrderType
-from BlockExTradeApi import OfferType
+from blockex.tradeapi import BlockExTradeApi
+from blockex.tradeapi import OrderType
+from blockex.tradeapi import OfferType
 
 
 # Integration tests
 class TestTradeApi(TestCase):
     def setUp(self):
-        if not test_integration_config.api_url:
+        if not test_integration_config.API_URL:
             raise ValueError(
                 'api_url must be set. Check test_integration_config.py.')
-        if not test_integration_config.api_id:
+        if not test_integration_config.API_ID:
             raise ValueError(
                 'api_id must be set. Check test_integration_config.py.')
-        if not test_integration_config.username:
+        if not test_integration_config.USERNAME:
             raise ValueError(
                 'username must be set. Check test_integration_config.py.')
-        if not test_integration_config.password:
+        if not test_integration_config.PASSWORD:
             raise ValueError(
                 'password must be set. Check test_integration_config.py.')
 
         self.trade_api = BlockExTradeApi(
-            test_integration_config.api_url,
-            test_integration_config.api_id,
-            test_integration_config.username,
-            test_integration_config.password)
+            test_integration_config.API_URL,
+            test_integration_config.API_ID,
+            test_integration_config.USERNAME,
+            test_integration_config.PASSWORD)
 
 
 class TestTradeApiLoginLogout(TestTradeApi):

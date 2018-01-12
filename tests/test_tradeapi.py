@@ -7,6 +7,8 @@ from mock import Mock
 from blockex.tradeapi import BlockExTradeApi
 from blockex.tradeapi import OrderType
 from blockex.tradeapi import OfferType
+from blockex.tradeapi import convert_instrument_number_fields
+from blockex.tradeapi import convert_order_number_fields
 
 
 # Unit tests
@@ -124,9 +126,9 @@ class TestTradeApiGetOrders(TestTradeApi):
         response.status_code = 200
         orders_list = """
             [{"orderID": "32592",
-            "price": 13.40,
-            "initialQuantity": 32.50,
-            "quantity": 32.50,
+            "price": "13.40",
+            "initialQuantity": "32.50",
+            "quantity": "32.50",
             "dateCreated": "2017-10-09T09:32:24.735659+00:00",
             "offerType": 1,
             "type": 1,
@@ -134,9 +136,9 @@ class TestTradeApiGetOrders(TestTradeApi):
             "instrumentID": 1,
             "trades": null},
             {"orderID": "32593",
-            "price": 11.34,
-            "initialQuantity": 26.00,
-            "quantity": 26.00,
+            "price": "11.34",
+            "initialQuantity": "26.00",
+            "quantity": "26.00",
             "dateCreated": "2017-10-09T09:35:10.61228+00:00",
             "offerType": 1,
             "type": 1,
@@ -153,16 +155,19 @@ class TestTradeApiGetOrders(TestTradeApi):
             'https://test.api.url/api/orders/get?',
             headers={'Authorization': 'Bearer SomeAccessToken'})
 
-        self.assertEqual(get_orders_response, response.json())
+        orders = response.json()
+        for order in orders:
+            convert_order_number_fields(order)
+        self.assertEqual(get_orders_response, orders)
 
     def test_successful_get_orders_with_filter(self):
         response = Response()
         response.status_code = 200
         orders_list = """
             [{"orderID": "32592",
-            "price": 13.40,
-            "initialQuantity": 32.50,
-            "quantity": 32.50,
+            "price": "13.40",
+            "initialQuantity": "32.50",
+            "quantity": "32.50",
             "dateCreated": "2017-10-09T09:32:24.735659+00:00",
             "offerType": 1,
             "type": 1,
@@ -170,9 +175,9 @@ class TestTradeApiGetOrders(TestTradeApi):
             "instrumentID": 1,
             "trades": null},
             {"orderID": "32593",
-            "price": 11.34,
-            "initialQuantity": 26.00,
-            "quantity": 26.00,
+            "price": "11.34",
+            "initialQuantity": "26.00",
+            "quantity": "26.00",
             "dateCreated": "2017-10-09T09:35:10.61228+00:00",
             "offerType": 1,
             "type": 1,
@@ -199,7 +204,10 @@ class TestTradeApiGetOrders(TestTradeApi):
             'https://test.api.url/api/orders/get?' + query_string,
             headers={'Authorization': 'Bearer SomeAccessToken'})
 
-        self.assertEqual(get_orders_response, response.json())
+        orders = response.json()
+        for order in orders:
+            convert_order_number_fields(order)
+        self.assertEqual(get_orders_response, orders)
 
     def test_unsuccessful_get_orders(self):
         response = Response()
@@ -222,9 +230,9 @@ class TestTradeApiGetMarketOrders(TestTradeApi):
         response.status_code = 200
         market_orders_list = """
             [{"orderID": "31635",
-            "price": 5.00,
-            "initialQuantity": 270.00,
-            "quantity": 0.00,
+            "price": "5.00",
+            "initialQuantity": "270.00",
+            "quantity": "0.00",
             "dateCreated": "2017-05-14T09:19:53.335+00:00",
             "offerType": 1,
             "type": 1,
@@ -232,9 +240,9 @@ class TestTradeApiGetMarketOrders(TestTradeApi):
             "instrumentID": 1,
             "trades": null},
             {"orderID": "31636",
-            "price": 1.00,
-            "initialQuantity": 260.00,
-            "quantity": 0.00,
+            "price": "1.00",
+            "initialQuantity": "260.00",
+            "quantity": "0.00",
             "dateCreated": "2017-05-14T09:19:55.782+00:00",
             "offerType": 1,
             "type": 1,
@@ -256,16 +264,19 @@ class TestTradeApiGetMarketOrders(TestTradeApi):
         get_mock.assert_called_once_with(
             'https://test.api.url/api/orders/getMarketOrders?' + query_string)
 
-        self.assertEqual(get_market_orders_response, response.json())
+        orders = response.json()
+        for order in orders:
+            convert_order_number_fields(order)
+        self.assertEqual(get_market_orders_response, orders)
 
     def test_successful_get_market_orders_with_filter(self):
         response = Response()
         response.status_code = 200
         market_orders_list = """
             [{"orderID": "31635",
-            "price": 5.00,
-            "initialQuantity": 270.00,
-            "quantity": 0.00,
+            "price": "5.00",
+            "initialQuantity": "270.00",
+            "quantity": "0.00",
             "dateCreated": "2017-05-14T09:19:53.335+00:00",
             "offerType": 1,
             "type": 1,
@@ -273,9 +284,9 @@ class TestTradeApiGetMarketOrders(TestTradeApi):
             "instrumentID": 1,
             "trades": null},
             {"orderID": "31636",
-            "price": 1.00,
-            "initialQuantity": 260.00,
-            "quantity": 0.00,
+            "price": "1.00",
+            "initialQuantity": "260.00",
+            "quantity": "0.00",
             "dateCreated": "2017-05-14T09:19:55.782+00:00",
             "offerType": 1,
             "type": 1,
@@ -302,7 +313,10 @@ class TestTradeApiGetMarketOrders(TestTradeApi):
         get_mock.assert_called_once_with(
             'https://test.api.url/api/orders/getMarketOrders?' + query_string)
 
-        self.assertEqual(get_market_orders_response, response.json())
+        orders = response.json()
+        for order in orders:
+            convert_order_number_fields(order)
+        self.assertEqual(get_market_orders_response, orders)
 
     def test_unsuccessful_get_market_orders(self):
         response = Response()
@@ -446,14 +460,14 @@ class TestTradeApiGetTraderInstruments(TestTradeApi):
             "name": "BTC/EUR",
             "baseCurrencyID": 43,
             "quoteCurrencyID": 2,
-            "minOrderAmount": 0.000000000000,
+            "minOrderAmount": "0.020000000000",
             "commissionFeePercent": 0.020000000000},
             {"id": 2,
             "description": "Ethereum/Euro",
             "name": "ETH/EUR",
             "baseCurrencyID": 46,
             "quoteCurrencyID": 2,
-            "minOrderAmount": 9.000000000000,
+            "minOrderAmount": "9.000000000000",
             "commissionFeePercent": 0.025000000000}]"""
         response._content = instruments_list.encode()
         get_mock = Mock(return_value=response)
@@ -466,7 +480,10 @@ class TestTradeApiGetTraderInstruments(TestTradeApi):
             'https://test.api.url/api/orders/traderinstruments',
             headers={'Authorization': 'Bearer SomeAccessToken'})
 
-        self.assertEqual(get_trader_instruments_response, response.json())
+        instruments = response.json()
+        for instrument in instruments:
+            convert_instrument_number_fields(instrument)
+        self.assertEqual(get_trader_instruments_response, instruments)
 
     def test_unsuccessful_get_trader_instruments(self):
         response = Response()
@@ -493,14 +510,14 @@ class TestTradeApiGetPartnerInstruments(TestTradeApi):
             "name": "BTC/EUR",
             "baseCurrencyID": 43,
             "quoteCurrencyID": 2,
-            "minOrderAmount": 0.000000000000,
+            "minOrderAmount": "0.020000000000",
             "commissionFeePercent": 0.020000000000},
             {"id": 2,
             "description": "Ethereum/Euro",
             "name": "ETH/EUR",
             "baseCurrencyID": 46,
             "quoteCurrencyID": 2,
-            "minOrderAmount": 9.000000000000,
+            "minOrderAmount": "9.000000000000",
             "commissionFeePercent": 0.025000000000}]"""
         response._content = instruments_list.encode()
         get_mock = Mock(return_value=response)
@@ -513,8 +530,10 @@ class TestTradeApiGetPartnerInstruments(TestTradeApi):
             'https://test.api.url/api/orders/' +
             'partnerinstruments?apiID=CorrectApiID')
 
-        self.assertEqual(get_partner_instruments_response,
-                         response.json())
+        instruments = response.json()
+        for instrument in instruments:
+            convert_instrument_number_fields(instrument)
+        self.assertEqual(get_partner_instruments_response, instruments)
 
     def test_unsuccessful_get_partner_instruments(self):
         response = Response()

@@ -1,6 +1,7 @@
 """BlockEx Trade API client library"""
 from enum import Enum
 import datetime
+import decimal
 import requests
 from requests import RequestException
 from six.moves.urllib.parse import urlencode
@@ -111,7 +112,10 @@ class BlockExTradeApi(object):
             self.api_url + self.GET_ORDERS_PATH + query_string)
 
         if response.status_code == 200:
-            return response.json()
+            orders = response.json()
+            for order in orders:
+                convert_order_number_fields(order)
+            return orders
         else:
             exception_message = 'Failed to get the orders. {error_message}'.format(
                 error_message=get_error_message(response))
@@ -146,7 +150,10 @@ class BlockExTradeApi(object):
         response = requests.get(
             self.api_url + self.GET_MARKET_ORDERS_PATH + query_string)
         if response.status_code == 200:
-            return response.json()
+            orders = response.json()
+            for order in orders:
+                convert_order_number_fields(order)
+            return orders
         else:
             exception_message = 'Failed to get the market orders. {error_message}'.format(
                 error_message=get_error_message(response))
@@ -216,7 +223,10 @@ class BlockExTradeApi(object):
             'get',
             self.api_url + self.GET_TRADER_INSTRUMENTS_PATH)
         if response.status_code == 200:
-            return response.json()
+            instruments = response.json()
+            for instrument in instruments:
+                convert_instrument_number_fields(instrument)
+            return instruments
         else:
             exception_message = 'Failed to get the trader instruments. {error_message}'.format(
                 error_message=get_error_message(response))
@@ -229,7 +239,10 @@ class BlockExTradeApi(object):
         response = requests.get(
             self.api_url + self.GET_PARTNER_INSTRUMENTS_PATH + query_string)
         if response.status_code == 200:
-            return response.json()
+            instruments = response.json()
+            for instrument in instruments:
+                convert_instrument_number_fields(instrument)
+            return instruments
         else:
             exception_message = 'Failed to get the partner instruments. {error_message}'.format(
                 error_message=get_error_message(response))
@@ -284,3 +297,16 @@ def get_error_message(response):
         error_message = ''
 
     return error_message
+
+def convert_instrument_number_fields(instrument):
+    instrument['minOrderAmount'] = \
+        decimal.getcontext().create_decimal(instrument['minOrderAmount'])
+
+def convert_order_number_fields(order):
+    order['orderID'] = int(order['orderID'])
+    order['initialQuantity'] = \
+        decimal.getcontext().create_decimal(order['initialQuantity'])
+    order['price'] = \
+        decimal.getcontext().create_decimal(order['price'])
+    order['quantity'] = \
+        decimal.getcontext().create_decimal(order['quantity'])

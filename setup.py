@@ -4,9 +4,9 @@ setup(
     name='blockex-tradeapi',
     version='1.0.0rc1',
     description='Python client library for BlockEx Trade API',
-    url='https://github.com/blockex/tradeapi',
+    url='',
     author='Dobromir Petrov, BlockEx',
-    author_email='dobromir.petrov@blockex.com',
+    author_email='developers@blockex.com',
     classifiers=[
         'Development Status :: 4 - Beta',
         'Intended Audience :: Developers',
@@ -21,7 +21,7 @@ setup(
         'test': ['mock'],
     },
     project_urls={
-        'Bug Reports': 'https://github.com/blockex/tradeapi/issues',
-        'Source': 'https://github.com/blockex/tradeapi',
+        'Bug Reports': '',
+        'Source': '',
     },
 )

@@ -33,6 +33,11 @@ class BlockExTradeApi(object):
     GET_PARTNER_INSTRUMENTS_PATH = 'api/orders/partnerinstruments?'
 
     def __init__(self, api_url, api_id, username, password):
+        assert api_url
+        assert api_id
+        assert username
+        assert password
+
         self.api_url = api_url
         self.api_id = api_id
         self.username = username

@@ -17,11 +17,6 @@ def main():
     # The Trader''s password
     password = ''
 
-    assert api_url
-    assert api_id
-    assert username
-    assert password
-
     # Create Trade API instance
     trade_api = BlockExTradeApi(api_url=api_url,
                                 api_id=api_id,

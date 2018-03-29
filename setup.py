@@ -5,7 +5,7 @@ setup(
     version='1.0.0rc1',
     description='Python client library for BlockEx Trade API',
     url='',
-    author='Dobromir Petrov, BlockEx',
+    author='D. Petrov, BlockEx',
     author_email='developers@blockex.com',
     classifiers=[
         'Development Status :: 4 - Beta',

@@ -99,8 +99,6 @@ The following scenario gets all the instruments available for the trader and ite
 trader_instruments = trade_api.get_trader_instruments()
 for instrument in trader_instruments:
 	try:
-		trade_api.cancel_all_orders(instrument_id=1)
-
 		instrument_id = instrument['id']
 
 		trade_api.cancel_all_orders(instrument_id)

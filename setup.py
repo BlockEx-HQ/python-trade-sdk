@@ -19,9 +19,9 @@ setup(
     ],
     license='MIT',
     keywords='api client blockex trade sdk',
-    install_requires=['enum34', 'six', 'requests'],
+    install_requires=['enum34', 'requests'],
     extras_require={
-        'test': ['mock'],
+        'test': ['mock', 'pytest'],
     },
     packages=(
         "blockex.tradeapi",

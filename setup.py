@@ -1,27 +1,33 @@
-from setuptools import setup, find_packages
+from setuptools import setup
+
+version = "0.0.1"
 
 setup(
-    name='blockex-tradeapi',
-    version='1.0.0rc1',
-    description='Python client library for BlockEx Trade API',
-    url='',
-    author='D. Petrov, BlockEx',
+    name='blockex.tradeapi',
+    version=version,
+    description='BlockEx trade API client SDK',
+    url='https://blockexmarkets.com',
+    author='BlockEx dev team',
     author_email='developers@blockex.com',
     classifiers=[
         'Development Status :: 4 - Beta',
         'Intended Audience :: Developers',
         'Topic :: Software Development :: Libraries',
-        'License :: OSI Approved :: GNU General Public License (GPL)',
+        'License :: OSI Approved :: MIT',
         'Programming Language :: Python :: 2',
         'Programming Language :: Python :: 3',
     ],
-    keywords='api client blockex trade api',
+    license='MIT',
+    keywords='api client blockex trade sdk',
     install_requires=['enum34', 'six', 'requests'],
     extras_require={
         'test': ['mock'],
     },
+    packages=(
+        "blockex.tradeapi",
+    ),
     project_urls={
-        'Bug Reports': '',
-        'Source': '',
+        'Bug Reports': 'https://bitbucket.org/blockex/python-sdk/issues',
+        'Source': 'https://bitbucket.org/blockex/python-sdk',
     },
 )

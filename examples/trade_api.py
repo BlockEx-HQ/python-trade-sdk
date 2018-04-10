@@ -1,6 +1,6 @@
-from blockex.tradeapi import BlockExTradeApi
-from blockex.tradeapi import OrderType
-from blockex.tradeapi import OfferType
+from blockex.tradeapi.tradeapi import BlockExTradeApi
+from blockex.tradeapi.tradeapi import OrderType
+from blockex.tradeapi.tradeapi import OfferType
 
 
 def main():

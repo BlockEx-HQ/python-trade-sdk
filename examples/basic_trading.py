@@ -3,33 +3,36 @@ from blockex.tradeapi import C
 
 
 def main():
-    # The API URL, defaults to https://api.blockex.com/
-    api_url = None
+    # API URL defaults to https://api.blockex.com/
+    API_URL = None
 
-    # The Partner's API ID, defaults to 7c11fb8e-f744-47ee-aec2-9da5eb83ad84 (blockexmarkets.com)
-    api_id = None
+    # partner API ID, defaults to 7c11fb8e-f744-47ee-aec2-9da5eb83ad84 (blockexmarkets.com)
+    API_ID = None
 
-    # The Trader''s username, must be provided
-    username = ''
+    # trader username, must be provided
+    USERNAME = ''
 
-    # The Trader''s password, must be provided
-    password = ''
+    # trader password, must be provided
+    PASSWORD = ''
 
     try:
         # Create Trade API instance
-        trade_api = BlockExTradeApi(username=username,
-                                    password=password,
-                                    api_url=api_url,
-                                    api_id=api_id,)
+        trade_api = BlockExTradeApi(username=USERNAME,
+                                    password=PASSWORD,
+                                    api_url=API_URL,
+                                    api_id=API_ID,)
 
         # Get trader instruments
         trader_instruments = trade_api.get_trader_instruments()
+        print('>>> trader instruments:', trader_instruments)
 
         # Get partner instruments
         partner_instruments = trade_api.get_partner_instruments()
+        print('>>> partner instruments:', partner_instruments)
 
         # Get trader orders unfiltered
         orders = trade_api.get_orders()
+        print('>>> trader orders:', orders)
 
         # Get trader orders filtered
         orders_filtered = trade_api.get_orders(instrument_id=1,
@@ -38,9 +41,12 @@ def main():
                                                status=[C.OrderStatus.PENDING, C.OrderStatus.PLACED],
                                                load_executions=True,
                                                max_count=5)
+        print('>>> trader orders filtered:', orders_filtered)
 
         # Get market orders unfiltered
         market_orders = trade_api.get_market_orders(instrument_id=trader_instruments[0]['id'])
+        orders = trade_api.get_orders()
+        print('>>> market orders:', orders)
 
         # Get market orders filtered
         market_orders_filtered = trade_api.get_market_orders(
@@ -49,6 +55,10 @@ def main():
             offer_type=C.OfferType.BID,
             status=[C.OrderStatus.PENDING, C.OrderStatus.PLACED],
             max_count=5)
+        print('>>> market orders filtered:', orders)
+
+        # cancel all orders
+        trade_api.cancel_all_orders(instrument_id=trader_instruments[0]['id'])
 
         # Place order
         trade_api.create_order(offer_type=C.OfferType.BID,
@@ -57,11 +67,14 @@ def main():
                                price=5.2,
                                quantity=1)
 
-        # Cancel order
-        trade_api.cancel_order(order_id=32598)
+        # get open orders for instrument
+        orders_filtered = trade_api.get_orders(instrument_id=trader_instruments[0]['id'],
+                                               status=[C.OrderStatus.PENDING, C.OrderStatus.PLACED],
+                                               )
+        print('>>> trader orders:', orders_filtered)
 
-        # Cancel all orders for an instrument
-        trade_api.cancel_all_orders(instrument_id=trader_instruments[0]['id'])
+        # Cancel latest order
+        trade_api.cancel_order(order_id=orders_filtered[0]['id'])
 
         # The following scenario gets all the instruments available for the trader and iterates them.
         # For each instrument all orders are cancelled at first. Then the best bid and ask prices are

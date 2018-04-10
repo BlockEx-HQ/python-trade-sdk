@@ -31,7 +31,7 @@ class BlockExTradeApi(object):
             'client_id': self.api_id
         }
 
-        response = requests.post(self.api_url + C.ApiPath.LOGIN, data=data)
+        response = requests.post(f"{self.api_url}{C.ApiPath.LOGIN.value}", data=data)
         if response.status_code == C.SUCCESS:
             return response.json()
         else:
@@ -64,7 +64,7 @@ class BlockExTradeApi(object):
         if self.access_token is not None:
             headers = {'Authorization': 'Bearer ' + self.access_token}
             response = requests.post(
-                self.api_url + C.ApiPath.LOGOUT,
+                f"{self.api_url}{C.ApiPath.LOGOUT.value}",
                 headers=headers)
             if response.status_code == C.SUCCESS:
                 self.access_token = None
@@ -125,15 +125,19 @@ class BlockExTradeApi(object):
                 raise ValueError('offer_type must be of type OfferType')
             data['offerType'] = offer_type.value
         if status is not None:
-            data['status'] = status
+            status_values = []
+            for item in status:
+                assert isinstance(item, C.OrderStatus)
+                status_values.append(item.value)
+            data['status'] = ','.join(status_values)
         if load_executions is not None:
             data['loadExecutions'] = load_executions
         if max_count is not None:
             data['maxCount'] = max_count
 
         query_string = urlencode(data)
-        response = self.__make_authorized_request(
-            'get', f"{self.api_url}{C.ApiPath.GET_ORDERS}{query_string}")
+        response = self._make_authorized_request(
+            'get', f"{self.api_url}{C.ApiPath.GET_ORDERS.value}{query_string}")
 
         if response.status_code == C.SUCCESS:
             orders = response.json()
@@ -193,13 +197,16 @@ class BlockExTradeApi(object):
                 raise ValueError('offer_type must be of type OfferType')
             data['offerType'] = offer_type.value
         if status is not None:
-            data['status'] = status
+            status_values = []
+            for item in status:
+                assert isinstance(item, C.OrderStatus)
+                status_values.append(item.value)
+            data['status'] = ','.join(status_values)
         if max_count is not None:
             data['maxCount'] = max_count
 
         query_string = urlencode(data)
-        response = requests.get(
-            self.api_url + C.ApiPath.GET_MARKET_ORDERS + query_string)
+        response = requests.get(f"{self.api_url}{C.ApiPath.GET_MARKET_ORDERS.value}{query_string}")
         if response.status_code == C.SUCCESS:
             orders = response.json()
             for order in orders:
@@ -247,9 +254,8 @@ class BlockExTradeApi(object):
         }
 
         query_string = urlencode(data)
-        response = self.__make_authorized_request(
-            'post',
-            self.api_url + C.ApiPath.CREATE_ORDER + query_string)
+        response = self._make_authorized_request(
+            'post', f"{self.api_url}{C.ApiPath.CREATE_ORDER.value}{query_string}")
 
         if response.status_code != C.SUCCESS:
             exception_message = 'Failed to create an order. {error_message}'.format(
@@ -265,9 +271,8 @@ class BlockExTradeApi(object):
         """
         data = {'orderID': order_id}
         query_string = urlencode(data)
-        response = self.__make_authorized_request(
-            'post',
-            self.api_url + C.ApiPath.CANCEL_ORDER + query_string)
+        response = self._make_authorized_request('post',
+            f"{self.api_url}{C.ApiPath.CANCEL_ORDER.value}{query_string}")
 
         if response.status_code != C.SUCCESS:
             exception_message = 'Failed to cancel the order. {error_message}'.format(
@@ -284,9 +289,9 @@ class BlockExTradeApi(object):
         """
         data = {'instrumentID': instrument_id}
         query_string = urlencode(data)
-        response = self.__make_authorized_request(
+        response = self._make_authorized_request(
             'post',
-            self.api_url + C.ApiPath.CANCEL_ALL_ORDERS + query_string)
+            f"{self.api_url}{C.ApiPath.CANCEL_ALL_ORDERS.value}{query_string}")
 
         if response.status_code != C.SUCCESS:
             exception_message = 'Failed to cancel all orders. {error_message}'.format(
@@ -311,9 +316,8 @@ class BlockExTradeApi(object):
             fee when trading this instrument. The value is a decimal between 0 and 1.
         :raises: RequestException
         """
-        response = self.__make_authorized_request(
-            'get',
-            self.api_url + C.ApiPath.GET_TRADER_INSTRUMENTS)
+        response = self._make_authorized_request(
+            'get', f"{self.api_url}{C.ApiPath.GET_TRADER_INSTRUMENTS.value}")
         if response.status_code == C.SUCCESS:
             instruments = response.json()
             for instrument in instruments:
@@ -344,8 +348,8 @@ class BlockExTradeApi(object):
         """
         data = {'apiID': self.api_id}
         query_string = urlencode(data)
-        response = requests.get(
-            self.api_url + C.ApiPath.GET_PARTNER_INSTRUMENTS + query_string)
+        response = requests.get(f"{self.api_url}{C.ApiPath.GET_PARTNER_INSTRUMENTS.value}"
+                                f"{query_string}")
         if response.status_code == C.SUCCESS:
             instruments = response.json()
             for instrument in instruments:
@@ -356,7 +360,7 @@ class BlockExTradeApi(object):
                 error_message=get_error_message(response))
             raise RequestException(exception_message)
 
-    def __make_authorized_request(self, request_type, url):
+    def _make_authorized_request(self, request_type, url):
         request_type = request_type.lower()
         assert request_type in ('get', 'post')
 
@@ -366,7 +370,7 @@ class BlockExTradeApi(object):
             self.login()
 
         bearer = self.access_token if self.access_token else ''
-        headers = {'Authorization': r'Bearer {bearer}'}
+        headers = {'Authorization': f"Bearer {bearer}"}
         method = getattr(requests, request_type)
 
         response = method(url, headers=headers)

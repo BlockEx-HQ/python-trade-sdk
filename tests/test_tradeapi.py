@@ -12,10 +12,11 @@ convert_instrument_number_fields = tradeapi.convert_instrument_number_fields
 
 FIXTURE_INSTRUMENT_ID = 1
 FIXTURE_ACCESS_TOKEN = "SomeAccessToken"
-FIXTURE_API_URL = "ApiID"
-FIXTURE_API_ID = "ApiID"
-FIXTURE_USERNAME = "Username"
-FIXTURE_PASSWORD = "Password"
+FIXTURE_API_URL = "https://test.api.url/"
+FIXTURE_API_ID = "CorrectApiID"
+FIXTURE_USERNAME = "CorrectUsername"
+FIXTURE_PASSWORD = "CorrectPassword"
+FIXTURE_BAD_PASSWORD = "bad_password"
 
 # Unit tests
 class TestTradeApi(TestCase):
@@ -27,10 +28,10 @@ class TestTradeApi(TestCase):
             })
 
         self.trade_api = tradeapi.BlockExTradeApi(
-            'https://test.api.url/',
-            'CorrectApiID',
-            'CorrectUsername',
-            'CorrectPassword')
+            api_url=FIXTURE_API_URL,
+            api_id=FIXTURE_API_ID,
+            username=FIXTURE_USERNAME,
+            password=FIXTURE_PASSWORD)
         self.trade_api.get_access_token = self.get_access_token_mock
 
 
@@ -46,10 +47,8 @@ class TestTradeApiInit(TestTradeApi):
 class TestTradeApiLogin(TestCase):
     def setUp(self):
         self.trade_api = tradeapi.BlockExTradeApi(
-            'https://test.api.url/',
-            'CorrectApiID',
-            'CorrectUsername',
-            'CorrectPassword')
+            api_url=FIXTURE_API_URL, api_id=FIXTURE_API_ID,
+            username=FIXTURE_USERNAME, password=FIXTURE_PASSWORD)
 
     def test_authorized_login(self):
         response = Response()
@@ -61,22 +60,22 @@ class TestTradeApiLogin(TestCase):
         login_response = self.trade_api.login()
 
         post_mock.assert_called_once_with(
-            'https://test.api.url/oauth/token',
+            f"{FIXTURE_API_URL}oauth/token",
             data={
                 'grant_type': 'password',
-                'username': 'CorrectUsername',
-                'password': 'CorrectPassword',
-                'client_id': 'CorrectApiID'
+                'username': FIXTURE_USERNAME,
+                'password': FIXTURE_PASSWORD,
+                'client_id': FIXTURE_API_ID,
             })
 
         self.assertEqual(login_response, FIXTURE_ACCESS_TOKEN)
 
     def test_unauthorized_login(self):
         self.trade_api = tradeapi.BlockExTradeApi(
-            'https://test.api.url/',
-            'CorrectApiID',
-            'CorrectUsername',
-            'WrongPassword')
+            api_url=FIXTURE_API_URL,
+            api_id=FIXTURE_API_ID,
+            username=FIXTURE_USERNAME,
+            password=FIXTURE_BAD_PASSWORD)
 
         response = Response()
         response.status_code = C.BAD_REQUEST
@@ -91,9 +90,9 @@ class TestTradeApiLogin(TestCase):
             'https://test.api.url/oauth/token',
             data={
                 'grant_type': 'password',
-                'username': 'CorrectUsername',
-                'password': 'WrongPassword',
-                'client_id': 'CorrectApiID'
+                'username': FIXTURE_USERNAME,
+                'password': FIXTURE_BAD_PASSWORD,
+                'client_id': FIXTURE_API_ID
             })
 
 
@@ -464,8 +463,8 @@ class TestTradeApiGetTraderInstruments(TestTradeApi):
             "name": "BTC/EUR",
             "baseCurrencyID": 43,
             "quoteCurrencyID": 2,
-            "minOrderAmount": "0.0C.SUCCESS00000000",
-            "commissionFeePercent": 0.0C.SUCCESS00000000},
+            "minOrderAmount": "0.020000000000",
+            "commissionFeePercent": 0.020000000000},
             {"id": 2,
             "description": "Ethereum/Euro",
             "name": "ETH/EUR",
@@ -509,20 +508,21 @@ class TestTradeApiGetPartnerInstruments(TestTradeApi):
         response = Response()
         response.status_code = C.SUCCESS
         instruments_list = f"""
-            [{"id": {FIXTURE_INSTRUMENT_ID},
+            [{{"id": {FIXTURE_INSTRUMENT_ID},
             "description": "Bitcoin/Euro",
             "name": "BTC/EUR",
             "baseCurrencyID": 43,
             "quoteCurrencyID": 2,
-            "minOrderAmount": "0.0C.SUCCESS00000000",
-            "commissionFeePercent": 0.0C.SUCCESS00000000},
-            {"id": 2,
+            "minOrderAmount": "0.020000000000",
+            "commissionFeePercent": "0.020000000000"}},
+            {{"id": 2,
             "description": "Ethereum/Euro",
             "name": "ETH/EUR",
             "baseCurrencyID": 46,
             "quoteCurrencyID": 2,
             "minOrderAmount": "9.000000000000",
-            "commissionFeePercent": 0.025000000000}]"""
+            "commissionFeePercent": 0.025000000000}}]"""
+        print('>>>', instruments_list)
         response._content = instruments_list.encode()
         get_mock = Mock(return_value=response)
         requests.get = get_mock
@@ -540,6 +540,7 @@ class TestTradeApiGetPartnerInstruments(TestTradeApi):
         self.assertEqual(get_partner_instruments_response, instruments)
 
     def test_unsuccessful_get_partner_instruments(self):
+
         response = Response()
         response.status_code = C.BAD_REQUEST
         response._content = '{"message": "Invalid partner"}'.encode()
@@ -563,7 +564,7 @@ class TestTradeApiMakeAuthorizedRequest(TestTradeApi):
         requests.get = get_mock
 
         make_authorized_request_response =\
-            self.trade_api._tradeapi.BlockExTradeApi__make_authorized_request(
+            self.trade_api._make_authorized_request(
                 'get',
                 'ResourceURL')
 
@@ -582,7 +583,7 @@ class TestTradeApiMakeAuthorizedRequest(TestTradeApi):
         requests.post = post_mock
 
         make_authorized_request_response =\
-            self.trade_api._tradeapi.BlockExTradeApi__make_authorized_request(
+            self.trade_api._make_authorized_request(
                 'post', 'ResourceURL')
 
         self.get_access_token_mock.assert_called_once()
@@ -594,7 +595,7 @@ class TestTradeApiMakeAuthorizedRequest(TestTradeApi):
 
     def test_make_authorized_invalid_request_when_not_logged_in(self):
         with self.assertRaises(AssertionError):
-            self.trade_api._tradeapi.BlockExTradeApi__make_authorized_request(
+            self.trade_api._make_authorized_request(
                 'WrongType',
                 'ResourceURL')
 
@@ -611,7 +612,7 @@ class TestTradeApiMakeAuthorizedRequest(TestTradeApi):
         requests.get = get_mock
 
         make_authorized_request_response =\
-            self.trade_api._tradeapi.BlockExTradeApi__make_authorized_request(
+            self.trade_api._make_authorized_request(
                 'get', 'ResourceURL')
 
         self.get_access_token_mock.assert_called_once()
@@ -632,7 +633,7 @@ class TestTradeApiMakeAuthorizedRequest(TestTradeApi):
         requests.post = post_mock
 
         make_authorized_request_response =\
-            self.trade_api._tradeapi.BlockExTradeApi__make_authorized_request(
+            self.trade_api._make_authorized_request(
                 'post',
                 'ResourceURL')
 
@@ -649,7 +650,7 @@ class TestTradeApiMakeAuthorizedRequest(TestTradeApi):
         self.trade_api.login()
 
         with self.assertRaises(AssertionError):
-            self.trade_api._tradeapi.BlockExTradeApi__make_authorized_request(
+            self.trade_api._make_authorized_request(
                 'WrongType',
                 'ResourceURL')
 
@@ -666,7 +667,7 @@ class TestTradeApiMakeAuthorizedRequest(TestTradeApi):
         requests.get = get_mock
 
         make_authorized_request_response =\
-            self.trade_api._tradeapi.BlockExTradeApi__make_authorized_request(
+            self.trade_api._make_authorized_request(
                 'get',
                 'ResourceURL')
 
@@ -687,9 +688,8 @@ class TestTradeApiMakeAuthorizedRequest(TestTradeApi):
         post_mock = Mock(return_value=response)
         requests.post = post_mock
 
-        make_authorized_request_response =\
-            self.trade_api._tradeapi.BlockExTradeApi__make_authorized_request(
-                'post', 'ResourceURL')
+        make_authorized_request_response = self.trade_api._make_authorized_request('post',
+                                                                                    'ResourceURL')
 
         self.assertEqual(self.get_access_token_mock.call_count, 1)
         self.assertEqual(self.trade_api.access_token, FIXTURE_ACCESS_TOKEN)
@@ -699,3 +699,4 @@ class TestTradeApiMakeAuthorizedRequest(TestTradeApi):
             headers={'Authorization': 'Bearer SomeAccessToken'})
         self.assertEqual(post_mock.call_count, 1)
         self.assertEqual(make_authorized_request_response.status_code, C.SUCCESS)
+

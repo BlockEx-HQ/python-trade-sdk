@@ -16,13 +16,13 @@ class OrderType(Enum):
 
 class OrderStatus(Enum):
     """Order status int IDs"""
-    PENDING = 10
-    FAILED = 15
-    PLACED = 20
-    REJECTED = 30
-    CANCELLED = 40
-    PARTEXECUTED = 50
-    EXECUTED = 60
+    PENDING = '10'
+    FAILED = '15'
+    PLACED = '20'
+    REJECTED = '30'
+    CANCELLED = '40'
+    PARTEXECUTED = '50'
+    EXECUTED = '60'
 
 
 class OfferType(Enum):

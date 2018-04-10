@@ -7,6 +7,12 @@ DEFAULT_API_URL = 'https://api.blockex.com/'
 # default BlockEx Markets production API ID
 DEFAULT_API_ID = '7c11fb8e-f744-47ee-aec2-9da5eb83ad84'
 
+# HTTP
+SUCCESS = 200
+BAD_REQUEST = 400
+UNAUTHORIZED = 401
+
+
 class OrderType(Enum):
     """Order types"""
     LIMIT = 'Limit'
@@ -42,7 +48,3 @@ class ApiPath(Enum):
     CANCEL_ALL_ORDERS = 'api/orders/cancelall?'
     GET_TRADER_INSTRUMENTS = 'api/orders/traderinstruments'
     GET_PARTNER_INSTRUMENTS = 'api/orders/partnerinstruments?'
-
-SUCCESS = 200
-BAD_REQUEST = 400
-UNAUTHORIZED = 401

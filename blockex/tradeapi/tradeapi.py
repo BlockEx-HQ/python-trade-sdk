@@ -1,9 +1,8 @@
 """BlockEx Trade API client library"""
 import datetime
 import decimal
-import requests
-from requests import RequestException
 from urllib.parse import urlencode
+import requests
 
 from blockex.tradeapi import C
 
@@ -37,7 +36,7 @@ class BlockExTradeApi(object):
         else:
             exception_message = 'Login failed. {error_message}'.format(
                 error_message=get_error_message(response))
-            raise RequestException(exception_message)
+            raise requests.RequestException(exception_message)
 
     def login(self):
         """
@@ -45,7 +44,7 @@ class BlockExTradeApi(object):
 
         :returns: The access token of the logged in trader
         :rtype: dict
-        :raises: RequestException
+        :raises: requests.RequestException
         """
 
         access_token = self.get_access_token()
@@ -58,7 +57,7 @@ class BlockExTradeApi(object):
         """
         Performs a logout when logged in and deletes the stored access token.
 
-        :raises: RequestException
+        :raises: requests.RequestException
         """
 
         if self.access_token is not None:
@@ -71,7 +70,7 @@ class BlockExTradeApi(object):
             else:
                 exception_message = 'Logout failed. {error_message}'.format(
                     error_message=get_error_message(response))
-                raise RequestException(exception_message)
+                raise requests.RequestException(exception_message)
 
     def get_orders(
             self,
@@ -84,7 +83,7 @@ class BlockExTradeApi(object):
         """
         Gets the orders of the trader with the ability to apply filters.
 
-        :param instrument_id: Instrument ID. Use get_trader_instruments() 
+        :param instrument_id: Instrument ID. Use get_trader_instruments()
         to retrieve list of available instruments and their IDs. Optional.
         :type instrument_id: int
         :param order_type: Order type. Optional.
@@ -93,7 +92,7 @@ class BlockExTradeApi(object):
         :type offer_type: OfferType
         :param status: Order status. List of OrderStatus values. Optional.
         :type status: list
-        :param load_executions: Sets whether to load executed trades for an order. 
+        :param load_executions: Sets whether to load executed trades for an order.
         Defaults to False. Optional.
         :type load_executions: boolean
         :param max_count: Maximum number of items returned. Default value is 100. Optional.
@@ -107,11 +106,12 @@ class BlockExTradeApi(object):
             dateCreated (string)\n
             offerType (int) - Possible values 1 (Bid) and 2 (Ask).\n
             type (int) - Possible values 1 (Limit), 2 (Market) and 3 (Stop).\n
-            status (int) - Possible values 10 (Pending), 15 (Failed), 20 (Placed), 30 (Rejected), 40 (Cancelled),
-            50 (PartiallyExecuted) and 60 (Executed).\n
+            status (int) - Possible values 10 (Pending), 15 (Failed),
+            20 (Placed), 30 (Rejected), 40 (Cancelled), 50 (PartiallyExecuted)
+            and 60 (Executed).\n
             instrumentID (int)\n
             trades (list of dict)
-        :raises: RequestException
+        :raises: requests.RequestException
         """
         data = {}
         if instrument_id is not None:
@@ -142,12 +142,12 @@ class BlockExTradeApi(object):
         if response.status_code == C.SUCCESS:
             orders = response.json()
             for order in orders:
-                convert_order_number_fields(order)
+                convert_order_numbers(order)
             return orders
         else:
             exception_message = 'Failed to get the orders. {error_message}'.format(
                 error_message=get_error_message(response))
-            raise RequestException(exception_message)
+            raise requests.RequestException(exception_message)
 
     def get_market_orders(
             self,
@@ -158,7 +158,7 @@ class BlockExTradeApi(object):
             max_count=None):
         """Gets the market orders with the ability to apply filters.
 
-        :param instrument_id: Instrument identifier. Use get_trader_instruments() 
+        :param instrument_id: Instrument identifier. Use get_trader_instruments()
         to retrieve list of available instruments and their IDs. Optional.
         :type instrument_id: int
         :param order_type: Order type. Optional.
@@ -178,11 +178,12 @@ class BlockExTradeApi(object):
             dateCreated (string)\n
             offerType (int) - Possible values 1 (Bid) and 2 (Ask).\n
             type (int) - Possible values 1 (Limit), 2 (Market) and 3 (Stop).\n
-            status (int) - Possible values 10 (Pending), 15 (Failed), 20 (Placed), 30 (Rejected), 40 (Cancelled),
-            50 (PartiallyExecuted) and 60 (Executed).\n
+            status (int) - Possible values 10 (Pending), 15 (Failed),
+            20 (Placed), 30 (Rejected), 40 (Cancelled), 50 (PartiallyExecuted)
+            and 60 (Executed).\n
             instrumentID (int)\n
             trades (list of dict)
-        :raises: RequestException
+        :raises: requests.RequestException
         """
         data = {
             'apiID': self.api_id,
@@ -210,12 +211,12 @@ class BlockExTradeApi(object):
         if response.status_code == C.SUCCESS:
             orders = response.json()
             for order in orders:
-                convert_order_number_fields(order)
+                convert_order_numbers(order)
             return orders
         else:
             exception_message = 'Failed to get the market orders. {error_message}'.format(
                 error_message=get_error_message(response))
-            raise RequestException(exception_message)
+            raise requests.RequestException(exception_message)
 
     def create_order(
             self,
@@ -230,14 +231,14 @@ class BlockExTradeApi(object):
         :type offer_type: OfferType
         :param order_type: Order type.
         :type order_type: OrderType
-        :param instrument_id: Instrument ID. Use get_trader_instruments() 
+        :param instrument_id: Instrument ID. Use get_trader_instruments()
         to retrieve list of available instruments and their IDs.
         :type instrument_id: int
         :param price: Price
         :type price: float
         :param quantity: Quantity
         :type quantity: float
-        :raises: RequestException
+        :raises: requests.RequestException
         """
         if not isinstance(order_type, C.OrderType):
             raise ValueError('order_type must be of type OrderType')
@@ -260,24 +261,24 @@ class BlockExTradeApi(object):
         if response.status_code != C.SUCCESS:
             exception_message = 'Failed to create an order. {error_message}'.format(
                 error_message=get_error_message(response))
-            raise RequestException(exception_message)
+            raise requests.RequestException(exception_message)
 
     def cancel_order(self, order_id):
         """Cancels a specific order.
 
         :param order_id: Order identifier
         :type order_id: int
-        :raises: RequestException
+        :raises: requests.RequestException
         """
         data = {'orderID': order_id}
         query_string = urlencode(data)
-        response = self._make_authorized_request('post',
-            f"{self.api_url}{C.ApiPath.CANCEL_ORDER.value}{query_string}")
+        response = self._make_authorized_request(
+            'post', f"{self.api_url}{C.ApiPath.CANCEL_ORDER.value}{query_string}")
 
         if response.status_code != C.SUCCESS:
             exception_message = 'Failed to cancel the order. {error_message}'.format(
                 error_message=get_error_message(response))
-            raise RequestException(exception_message)
+            raise requests.RequestException(exception_message)
 
     def cancel_all_orders(self, instrument_id):
         """Cancels all the orders of the trader for a specific instrument.
@@ -285,7 +286,7 @@ class BlockExTradeApi(object):
         :param instrument_id: Instrument identifier.
         Use get_trader_instruments() to retrieve them.\n
         :type instrument_id: int
-        :raises: RequestException
+        :raises: requests.RequestException
         """
         data = {'instrumentID': instrument_id}
         query_string = urlencode(data)
@@ -296,7 +297,7 @@ class BlockExTradeApi(object):
         if response.status_code != C.SUCCESS:
             exception_message = 'Failed to cancel all orders. {error_message}'.format(
                 error_message=get_error_message(response))
-            raise RequestException(exception_message)
+            raise requests.RequestException(exception_message)
 
     def get_trader_instruments(self):
         """Gets the available instruments for the trader.
@@ -314,19 +315,19 @@ class BlockExTradeApi(object):
             Every order having an amount less than that, will be rejected.\n
             commissionFeePercent (float) - The percent of the commission
             fee when trading this instrument. The value is a decimal between 0 and 1.
-        :raises: RequestException
+        :raises: requests.RequestException
         """
         response = self._make_authorized_request(
             'get', f"{self.api_url}{C.ApiPath.GET_TRADER_INSTRUMENTS.value}")
         if response.status_code == C.SUCCESS:
             instruments = response.json()
             for instrument in instruments:
-                convert_instrument_number_fields(instrument)
+                convert_instrument_numbers(instrument)
             return instruments
         else:
             exception_message = 'Failed to get the trader instruments. {error_message}'.format(
                 error_message=get_error_message(response))
-            raise RequestException(exception_message)
+            raise requests.RequestException(exception_message)
 
     def get_partner_instruments(self):
         """Gets the available instruments for the partner.
@@ -344,7 +345,7 @@ class BlockExTradeApi(object):
             Every order having an amount less than that, will be rejected.\n
             commissionFeePercent (float) - The percent of the commission fee
             when trading this instrument The value is a decimal between 0 and 1.\n
-        :raises: RequestException
+        :raises: requests.RequestException
         """
         data = {'apiID': self.api_id}
         query_string = urlencode(data)
@@ -353,12 +354,12 @@ class BlockExTradeApi(object):
         if response.status_code == C.SUCCESS:
             instruments = response.json()
             for instrument in instruments:
-                convert_instrument_number_fields(instrument)
+                convert_instrument_numbers(instrument)
             return instruments
         else:
             exception_message = 'Failed to get the partner instruments. {error_message}'.format(
                 error_message=get_error_message(response))
-            raise RequestException(exception_message)
+            raise requests.RequestException(exception_message)
 
     def _make_authorized_request(self, request_type, url):
         request_type = request_type.lower()
@@ -383,6 +384,7 @@ class BlockExTradeApi(object):
 
         return response
 
+
 def is_unauthorized_response(response):
     """Checks if a response is unauthorized."""
     if response.status_code == C.UNAUTHORIZED:
@@ -393,6 +395,7 @@ def is_unauthorized_response(response):
                 return True
 
     return False
+
 
 def get_error_message(response):
     """Gets an error message for a response."""
@@ -406,11 +409,25 @@ def get_error_message(response):
 
     return error_message
 
-def convert_instrument_number_fields(instrument):
+
+def convert_instrument_numbers(instrument):
+    """
+    cast minOrderAmount value to Decimal
+
+    :param instrument: dict
+    :return: dict
+    """
     instrument['minOrderAmount'] = \
         decimal.getcontext().create_decimal(instrument['minOrderAmount'])
 
-def convert_order_number_fields(order):
+
+def convert_order_numbers(order):
+    """
+    cast incoming values to int or Decimal
+
+    :param order: dict
+    :return: dict
+    """
     context = decimal.getcontext()
     order['orderID'] = int(order['orderID'])
     order['initialQuantity'] = context.create_decimal(order['initialQuantity'])

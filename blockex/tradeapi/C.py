@@ -43,6 +43,7 @@ class ApiPath(Enum):
     LOGOUT = 'oauth/logout'
     GET_ORDERS = 'api/orders/get?'
     GET_MARKET_ORDERS = 'api/orders/getMarketOrders?'
+    GET_TRADES_HISTORY = 'api/orders/getTradesHistory?'
     CREATE_ORDER = 'api/orders/create?'
     CANCEL_ORDER = 'api/orders/cancel?'
     CANCEL_ALL_ORDERS = 'api/orders/cancelall?'

@@ -218,6 +218,76 @@ class BlockExTradeApi(object):
                 error_message=get_error_message(response))
             raise requests.RequestException(exception_message)
 
+    def get_latest_price(self, instrument_id):
+        """Gets latest trade price for given instrument.
+
+        :param instrument_id: Instrument identifier. Use get_trader_instruments()
+        to retrieve list of available instruments and their IDs. Optional.
+        :type instrument_id: int
+        """
+        data = {
+            'ApiID': self.api_id,
+            'InstrumentID': instrument_id,
+            "SortDesc": "true",
+            "SortBy": "date",
+            "PageSize": "1",
+        }
+        #@TODO querying full history is a silly way to retrieve latest price
+        response = requests.post(f"{self.api_url}{C.ApiPath.GET_TRADES_HISTORY.value}",
+                                 data=urlencode(data), headers={
+                "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"
+            })
+        if response.status_code == C.SUCCESS:
+            trades = response.json()
+            return trades['trades'][0]['price'] if trades['trades'] else None
+        else:
+            exception_message = f"Failed to get the market latest " \
+                                f"price. {get_error_message(response)}"
+            raise requests.RequestException(exception_message)
+
+    def get_highest_bid_order(self, instrument_id):
+        """Gets highest bid price for given instrument.
+
+        :param instrument_id: Instrument identifier. Use get_trader_instruments()
+        to retrieve list of available instruments and their IDs. Optional.
+        :type instrument_id: int
+        """
+
+        # @TODO we'll be in trouble once we have more than 1000 orders at once
+        orders = self.get_market_orders(instrument_id, max_count=1000,
+                                        status=[C.OrderStatus.PLACED],
+                                        offer_type=C.OfferType.BID)
+
+        highest_bid = 0
+        highest_bid_order = None
+        for order in orders:
+            if highest_bid < order['price']:
+                highest_bid = order['price']
+                highest_bid_order = order
+        return highest_bid_order
+
+    def get_lowest_ask_order(self, instrument_id):
+        """Gets highest bid price for given instrument.
+
+        :param instrument_id: Instrument identifier. Use get_trader_instruments()
+        to retrieve list of available instruments and their IDs. Optional.
+        :type instrument_id: int
+        """
+
+        # @TODO we'll be in trouble once we have more than 1000 orders at once
+        orders = self.get_market_orders(instrument_id, max_count=1000,
+                                        status=[C.OrderStatus.PLACED],
+                                        offer_type=C.OfferType.ASK)
+
+        lowest_ask = orders[0]['price'] if orders else 0
+        lowest_ask_order = orders[0] if orders else None
+        for order in orders:
+            if lowest_ask > order['price']:
+                lowest_ask = order['price']
+                lowest_ask_order = order
+
+        return lowest_ask_order
+
     def create_order(
             self,
             offer_type,
@@ -262,6 +332,14 @@ class BlockExTradeApi(object):
             exception_message = 'Failed to create an order. {error_message}'.format(
                 error_message=get_error_message(response))
             raise requests.RequestException(exception_message)
+        else:
+            orders = self.get_orders(status=[C.OrderStatus.PENDING, C.OrderStatus.PLACED,
+                                             C.OrderStatus.PARTEXECUTED],
+                                     load_executions=False)
+
+
+            order_set = set(order['orderID'] for order in orders)
+            self._open_orders = order_set
 
     def cancel_order(self, order_id):
         """Cancels a specific order.
@@ -279,6 +357,8 @@ class BlockExTradeApi(object):
             exception_message = 'Failed to cancel the order. {error_message}'.format(
                 error_message=get_error_message(response))
             raise requests.RequestException(exception_message)
+        else:
+            self. _open_orders.discard(order_id)
 
     def cancel_all_orders(self, instrument_id):
         """Cancels all the orders of the trader for a specific instrument.

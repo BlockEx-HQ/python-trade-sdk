@@ -1,4 +1,5 @@
 # BlockEx Trade API SDK
+_v0.0.2_
 
 ## Description
 BlockEx Trade API SDK is a Python client package for the Trade API
@@ -18,7 +19,7 @@ can generally be grouped into four categories:
 Tested and working on Python 3.6.4+.
 
 ```
-pip install blockex.tradeapi
+pip install git+https://github.com/BlockEx-HQ/python-trade-sdk --process-dependency-links
 ```
 
 ## Usage examples

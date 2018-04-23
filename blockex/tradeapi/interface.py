@@ -1,7 +1,6 @@
 """BlockEx Trade API client library"""
 from enum import Enum
 
-
 # default BlockEx production API URL
 DEFAULT_API_URL = 'https://api.blockex.com/'
 # default BlockEx Markets production API ID
@@ -41,6 +40,7 @@ class ApiPath(Enum):
     """Api paths"""
     LOGIN = 'oauth/token'
     LOGOUT = 'oauth/logout'
+
     GET_ORDERS = 'api/orders/get?'
     GET_MARKET_ORDERS = 'api/orders/getMarketOrders?'
     GET_TRADES_HISTORY = 'api/orders/getTradesHistory?'

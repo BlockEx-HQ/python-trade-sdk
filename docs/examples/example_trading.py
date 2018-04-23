@@ -1,39 +1,3 @@
-# BlockEx Trade API SDK
-_v0.0.2_
-
-## Description
-BlockEx Trade API SDK is a Python client package for the Trade API
-of BlockEx Digital Asset eXchange Platform. It's purpose is to provide an
-easy integration of Python-based systems with the BlockEx Trade API.
-
-The module consists of client implementations of API resources that
-can generally be grouped into four categories:
-
- - Trader authentication
- - Getting instruments
- - Getting open orders
- - Placing/cancelling orders
- - Receiving trade events
-
-[Documentation](http://blockex.trade-sdk.readthedocs.org/en/latest/index.html)
-
-# License
-[![License](http://img.shields.io/badge/Licence-MIT-brightgreen.svg)](LICENSE)
-
-# Installation
-Tested and working on Python 2.7 .. 3.6.4+.
-
-blockex-tradeapi is [available on PyPI](http://pypi.python.org/pypi/blockex.trade-sdk/)
-``` bash
-pip install blockex.trade-sdk
-```
-
-## Usage
-
-Below is a set of short example, see full example in
-`docs/examples/naive_trading.py` in this package's repo.
-
-```
 #!/usr/bin/env python
 from blockex.tradeapi import interface
 from blockex.tradeapi.tradeapi import BlockExTradeApi
@@ -60,6 +24,7 @@ orders_filtered = trade_api.get_orders(instrument_id=instrument_id,
                                                interface.OrderStatus.PLACED],
                                        load_executions=True,
                                        max_count=5)
+
 # get full list of market orders
 market_orders = trade_api.get_market_orders(instrument_id=instrument_id)
 # get filtered list of market orders
@@ -91,29 +56,3 @@ for order in orders_filtered:
 
 # cancel all orders for given instrument
 trade_api.cancel_all_orders(instrument_id=instrument_id)
-
-```
-
-This example only shows how to try naive trading.
-For more examples. Take a look at the [examples](docs/examples/) directory.
-
-
-## Tests
-To run the tests locally check out the SDK source
-and install `test` extra with `pip install -e .[test]`
-
-### Unit tests
-Run unit tests with `pytest tests/unit/`
-
-### Integration tests
-Integration tests run against the real API and need setting up trader
-account that you want to test with. You need to provide two env vars:
-`BLOCKEX_TEST_TRADEAPI_USERNAME` and `BLOCKEX_TEST_TRADEAPI_PASSWORD`
-to make tests work.
-
-By default tests will run against
-[blockexmarkets.com](https://blockexmarkets.com) API. To run tests against
-another API instance provide optional `BLOCKEX_TEST_TRADEAPI_URL`
-and `BLOCKEX_TEST_TRADEAPI_ID` env vars.
-
-Run integration tests with `pytest tests/integration/`.

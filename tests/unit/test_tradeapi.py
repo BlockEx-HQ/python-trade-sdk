@@ -1,10 +1,14 @@
+import sys
 from unittest import TestCase
-from urllib.parse import urlencode
+
 import requests
+from blockex.tradeapi import interface, tradeapi
 from mock import Mock
 
-from blockex.tradeapi import tradeapi, C
-
+if sys.version_info >= (3, 0):
+    from urllib.parse import urlencode  # pragma: no cover
+else:
+    from urllib import urlencode  # pragma: no cover
 
 Response = requests.Response
 RequestException = requests.RequestException
@@ -25,12 +29,10 @@ class TestTradeApi(TestCase):
             'access_token': FIXTURE_ACCESS_TOKEN,
             'expires_in': 86399,
         })
-
         self.trade_api = tradeapi.BlockExTradeApi(
-            api_url=FIXTURE_API_URL,
-            api_id=FIXTURE_API_ID,
-            username=FIXTURE_USERNAME,
-            password=FIXTURE_PASSWORD)
+            api_url=FIXTURE_API_URL, api_id=FIXTURE_API_ID,
+            username=FIXTURE_USERNAME, password=FIXTURE_PASSWORD)
+
         self.trade_api.get_access_token = self.get_access_token_mock
 
 
@@ -43,91 +45,10 @@ class TestTradeApiInit(TestTradeApi):
         self.assertIsNone(self.trade_api.access_token)
 
 
-class TestTradeApiLogin(TestCase):
-    def setUp(self):
-        self.trade_api = tradeapi.BlockExTradeApi(
-            api_url=FIXTURE_API_URL, api_id=FIXTURE_API_ID,
-            username=FIXTURE_USERNAME, password=FIXTURE_PASSWORD)
-
-    def test_authorized_login(self):
-        response = Response()
-        response.status_code = C.SUCCESS
-        response._content = '{"access_token":"SomeAccessToken", "expires_in":86399}'.encode()
-        post_mock = Mock(return_value=response)
-        requests.post = post_mock
-
-        login_response = self.trade_api.login()
-
-        post_mock.assert_called_once_with(
-            f"{FIXTURE_API_URL}oauth/token",
-            data={
-                'grant_type': 'password',
-                'username': FIXTURE_USERNAME,
-                'password': FIXTURE_PASSWORD,
-                'client_id': FIXTURE_API_ID,
-            })
-
-        self.assertEqual(login_response, FIXTURE_ACCESS_TOKEN)
-
-    def test_unauthorized_login(self):
-        self.trade_api = tradeapi.BlockExTradeApi(
-            api_url=FIXTURE_API_URL,
-            api_id=FIXTURE_API_ID,
-            username=FIXTURE_USERNAME,
-            password=FIXTURE_BAD_PASSWORD)
-
-        response = Response()
-        response.status_code = C.BAD_REQUEST
-        response._content = '{"error":"invalid_client"}'.encode()
-        post_mock = Mock(return_value=response)
-        requests.post = post_mock
-
-        with self.assertRaises(RequestException):
-            self.trade_api.login()
-
-        post_mock.assert_called_once_with(
-            'https://test.api.url/oauth/token',
-            data={
-                'grant_type': 'password',
-                'username': FIXTURE_USERNAME,
-                'password': FIXTURE_BAD_PASSWORD,
-                'client_id': FIXTURE_API_ID
-            })
-
-
-class TestTradeApiLogout(TestTradeApi):
-    def test_logout_when_logged_in(self):
-        self.trade_api.login()
-        self.assertEqual(self.trade_api.access_token, FIXTURE_ACCESS_TOKEN)
-
-        response = Response()
-        response.status_code = C.SUCCESS
-        post_mock = Mock(return_value=response)
-        requests.post = post_mock
-
-        self.trade_api.logout()
-
-        post_mock.assert_called_once_with(
-            'https://test.api.url/oauth/logout',
-            headers={'Authorization': 'Bearer SomeAccessToken'})
-
-        self.assertIsNone(self.trade_api.access_token)
-
-    def test_logout_when_not_logged_in(self):
-        post_mock = Mock()
-        requests.post = post_mock
-
-        self.assertIsNone(self.trade_api.access_token)
-
-        self.trade_api.logout()
-
-        post_mock.assert_not_called()
-
-
 class TestTradeApiGetOrders(TestTradeApi):
     def test_successful_get_orders_without_filter(self):
         response = Response()
-        response.status_code = C.SUCCESS
+        response.status_code = interface.SUCCESS
         orders_list = """
             [{"orderID": "32592",
             "price": "13.40",
@@ -166,7 +87,7 @@ class TestTradeApiGetOrders(TestTradeApi):
 
     def test_successful_get_orders_with_filter(self):
         response = Response()
-        response.status_code = C.SUCCESS
+        response.status_code = interface.SUCCESS
         orders_list = """
             [{"orderID": "32592",
             "price": "13.40",
@@ -193,22 +114,21 @@ class TestTradeApiGetOrders(TestTradeApi):
         requests.get = get_mock
 
         get_orders_response = self.trade_api.get_orders(
-            FIXTURE_INSTRUMENT_ID, C.OrderType.LIMIT, C.OfferType.BID,
-            [C.OrderStatus.PENDING, C.OrderStatus.PLACED],
+            FIXTURE_INSTRUMENT_ID, interface.OrderType.LIMIT, interface.OfferType.BID,
+            [interface.OrderStatus.PENDING, interface.OrderStatus.PLACED],
             True, 50)
 
         data = {}
         data['instrumentID'] = FIXTURE_INSTRUMENT_ID
+        data['loadExecutions'] = 'True'
+        data['maxCount'] = 50
         data['orderType'] = 'Limit'
         data['offerType'] = 'Bid'
         data['status'] = '10,20'
-        data['loadExecutions'] = 'True'
-        data['maxCount'] = 50
 
         query_string = urlencode(data)
-        get_mock.assert_called_once_with(
-            'https://test.api.url/api/orders/get?' + query_string,
-            headers={'Authorization': 'Bearer SomeAccessToken'})
+        get_mock.assert_called_once_with('https://test.api.url/api/orders/get?' + query_string,
+                                         headers={'Authorization': 'Bearer SomeAccessToken'})
 
         orders = response.json()
         for order in orders:
@@ -217,7 +137,7 @@ class TestTradeApiGetOrders(TestTradeApi):
 
     def test_unsuccessful_get_orders(self):
         response = Response()
-        response.status_code = C.BAD_REQUEST
+        response.status_code = interface.BAD_REQUEST
         response._content = '{"message": "Unknown trader"}'.encode()
         get_mock = Mock(return_value=response)
         requests.get = get_mock
@@ -233,7 +153,7 @@ class TestTradeApiGetOrders(TestTradeApi):
 class TestTradeApiGetMarketOrders(TestTradeApi):
     def test_successful_get_market_orders_without_filter(self):
         response = Response()
-        response.status_code = C.SUCCESS
+        response.status_code = interface.SUCCESS
         market_orders_list = """
             [{"orderID": "31635",
             "price": "5.00",
@@ -277,7 +197,7 @@ class TestTradeApiGetMarketOrders(TestTradeApi):
 
     def test_successful_get_market_orders_with_filter(self):
         response = Response()
-        response.status_code = C.SUCCESS
+        response.status_code = interface.SUCCESS
         market_orders_list = """
             [{"orderID": "31635",
             "price": "5.00",
@@ -304,17 +224,17 @@ class TestTradeApiGetMarketOrders(TestTradeApi):
         requests.get = get_mock
 
         get_market_orders_response = self.trade_api.get_market_orders(
-            FIXTURE_INSTRUMENT_ID, C.OrderType.LIMIT, C.OfferType.BID,
-            [C.OrderStatus.PENDING, C.OrderStatus.PLACED],
+            FIXTURE_INSTRUMENT_ID, interface.OrderType.LIMIT, interface.OfferType.BID,
+            [interface.OrderStatus.PENDING, interface.OrderStatus.PLACED],
             50)
 
         data = {
             'apiID': 'CorrectApiID',
             'instrumentID': FIXTURE_INSTRUMENT_ID,
+            'maxCount': '50',
             'orderType': 'Limit',
             'offerType': 'Bid',
-            'status': '10,20',
-            'maxCount': '50'
+            'status': '10,20'
         }
 
         query_string = urlencode(data)
@@ -328,7 +248,7 @@ class TestTradeApiGetMarketOrders(TestTradeApi):
 
     def test_unsuccessful_get_market_orders(self):
         response = Response()
-        response.status_code = C.BAD_REQUEST
+        response.status_code = interface.BAD_REQUEST
         response._content = '{"message": "Invalid partner API id"}'.encode()
         get_mock = Mock(return_value=response)
         requests.get = get_mock
@@ -349,37 +269,15 @@ class TestTradeApiGetMarketOrders(TestTradeApi):
 
 
 class TestTradeApiCreateOrder(TestTradeApi):
-    def test_successful_create_order(self):
-        response = Response()
-        response.status_code = C.SUCCESS
-        post_mock = Mock(return_value=response)
-        requests.post = post_mock
-
-        self.trade_api.create_order(C.OfferType.BID, C.OrderType.LIMIT,
-                                    FIXTURE_INSTRUMENT_ID, 15.2, 3.7)
-
-        data = {
-            'offerType': 'Bid',
-            'orderType': 'Limit',
-            'instrumentID': FIXTURE_INSTRUMENT_ID,
-            'price': 15.2,
-            'quantity': 3.7
-        }
-
-        query_string = urlencode(data)
-        post_mock.assert_called_once_with(
-            'https://test.api.url/api/orders/create?' + query_string,
-            headers={'Authorization': 'Bearer SomeAccessToken'})
-
     def test_unsuccessful_create_order(self):
         response = Response()
-        response.status_code = C.BAD_REQUEST
+        response.status_code = interface.BAD_REQUEST
         response._content = '{"message": "Unknown trader"}'.encode()
         post_mock = Mock(return_value=response)
         requests.post = post_mock
 
         with self.assertRaises(RequestException):
-            self.trade_api.create_order(C.OfferType.BID, C.OrderType.LIMIT,
+            self.trade_api.create_order(interface.OfferType.BID, interface.OrderType.LIMIT,
                                         FIXTURE_INSTRUMENT_ID, 15.2, 3.7)
 
         data = {
@@ -399,7 +297,7 @@ class TestTradeApiCreateOrder(TestTradeApi):
 class TestTradeApiCancelOrder(TestTradeApi):
     def test_successful_cancel_order(self):
         response = Response()
-        response.status_code = C.SUCCESS
+        response.status_code = interface.SUCCESS
         post_mock = Mock(return_value=response)
         requests.post = post_mock
 
@@ -411,7 +309,7 @@ class TestTradeApiCancelOrder(TestTradeApi):
 
     def test_unsuccessful_cancel_order(self):
         response = Response()
-        response.status_code = C.BAD_REQUEST
+        response.status_code = interface.BAD_REQUEST
         response._content = '{"message": "Unknown trader"}'.encode()
         post_mock = Mock(return_value=response)
         requests.post = post_mock
@@ -427,19 +325,19 @@ class TestTradeApiCancelOrder(TestTradeApi):
 class TestTradeApiCancelAllOrders(TestTradeApi):
     def test_successful_cancel_all_orders(self):
         response = Response()
-        response.status_code = C.SUCCESS
+        response.status_code = interface.SUCCESS
         post_mock = Mock(return_value=response)
         requests.post = post_mock
 
         self.trade_api.cancel_all_orders(FIXTURE_INSTRUMENT_ID)
 
         post_mock.assert_called_once_with(
-            f"https://test.api.url/api/orders/cancelall?instrumentID={FIXTURE_INSTRUMENT_ID}",
+            "https://test.api.url/api/orders/cancelall?instrumentID=" + str(FIXTURE_INSTRUMENT_ID),
             headers={'Authorization': 'Bearer SomeAccessToken'})
 
     def test_unsuccessful_cancel_all_orders(self):
         response = Response()
-        response.status_code = C.BAD_REQUEST
+        response.status_code = interface.BAD_REQUEST
         response._content = '{"message": "Unknown trader"}'.encode()
         post_mock = Mock(return_value=response)
         requests.post = post_mock
@@ -455,7 +353,7 @@ class TestTradeApiCancelAllOrders(TestTradeApi):
 class TestTradeApiGetTraderInstruments(TestTradeApi):
     def test_successful_get_trader_instruments(self):
         response = Response()
-        response.status_code = C.SUCCESS
+        response.status_code = interface.SUCCESS
         instruments_list = """
             [{"id": 1,
             "description": "Bitcoin/Euro",
@@ -475,8 +373,7 @@ class TestTradeApiGetTraderInstruments(TestTradeApi):
         get_mock = Mock(return_value=response)
         requests.get = get_mock
 
-        get_trader_instruments_response =\
-            self.trade_api.get_trader_instruments()
+        get_trader_instruments_response = self.trade_api.get_trader_instruments()
 
         get_mock.assert_called_once_with(
             'https://test.api.url/api/orders/traderinstruments',
@@ -489,7 +386,7 @@ class TestTradeApiGetTraderInstruments(TestTradeApi):
 
     def test_unsuccessful_get_trader_instruments(self):
         response = Response()
-        response.status_code = C.BAD_REQUEST
+        response.status_code = interface.BAD_REQUEST
         response._content = '{"message": "Unknown trader"}'.encode()
         get_mock = Mock(return_value=response)
         requests.get = get_mock
@@ -505,9 +402,9 @@ class TestTradeApiGetTraderInstruments(TestTradeApi):
 class TestTradeApiGetPartnerInstruments(TestTradeApi):
     def test_successful_get_partner_instruments(self):
         response = Response()
-        response.status_code = C.SUCCESS
-        instruments_list = f"""
-            [{{"id": {FIXTURE_INSTRUMENT_ID},
+        response.status_code = interface.SUCCESS
+        instruments_list = """
+            [{{"id": {instrument_id},
             "description": "Bitcoin/Euro",
             "name": "BTC/EUR",
             "baseCurrencyID": 43,
@@ -520,14 +417,13 @@ class TestTradeApiGetPartnerInstruments(TestTradeApi):
             "baseCurrencyID": 46,
             "quoteCurrencyID": 2,
             "minOrderAmount": "9.000000000000",
-            "commissionFeePercent": 0.025000000000}}]"""
+            "commissionFeePercent": 0.025000000000}}]""".format(instrument_id = FIXTURE_INSTRUMENT_ID)
 
         response._content = instruments_list.encode()
         get_mock = Mock(return_value=response)
         requests.get = get_mock
 
-        partner_instruments_response =\
-            self.trade_api.get_partner_instruments()
+        partner_instruments_response = self.trade_api.get_partner_instruments()
 
         get_mock.assert_called_once_with(
             'https://test.api.url/api/orders/' +
@@ -539,9 +435,8 @@ class TestTradeApiGetPartnerInstruments(TestTradeApi):
         self.assertEqual(partner_instruments_response, instruments)
 
     def test_unsuccessful_get_partner_instruments(self):
-
         response = Response()
-        response.status_code = C.BAD_REQUEST
+        response.status_code = interface.BAD_REQUEST
         response._content = '{"message": "Invalid partner"}'.encode()
         get_mock = Mock(return_value=response)
         requests.get = get_mock
@@ -551,149 +446,110 @@ class TestTradeApiGetPartnerInstruments(TestTradeApi):
             self.trade_api.get_partner_instruments()
 
         get_mock.assert_called_once_with(
-            'https://test.api.url/api/orders/' +
-            'partnerinstruments?apiID=IncorrectApiID')
+            'https://test.api.url/api/orders/' + 'partnerinstruments?apiID=IncorrectApiID')
 
 
 class TestTradeApiMakeAuthorizedRequest(TestTradeApi):
     def test_make_authorized_get_request_when_not_logged_in(self):
         response = Response()
-        response.status_code = C.SUCCESS
+        response.status_code = interface.SUCCESS
         get_mock = Mock(return_value=response)
         requests.get = get_mock
 
-        authorized_response =\
-            self.trade_api._make_authorized_request(
-                'get',
-                'ResourceURL')
+        authorized_response = self.trade_api.make_authorized_request(self.trade_api.get_path, 'ResourceURL')
 
         self.get_access_token_mock.assert_called_once()
         self.assertEqual(self.trade_api.access_token, FIXTURE_ACCESS_TOKEN)
 
-        get_mock.assert_called_once_with(
-            'ResourceURL',
-            headers={'Authorization': 'Bearer SomeAccessToken'})
-        self.assertEqual(authorized_response.status_code, C.SUCCESS)
+        get_mock.assert_called_once_with(self.trade_api.api_url + 'ResourceURL',
+                                         headers={'Authorization': 'Bearer SomeAccessToken'})
+        self.assertEqual(authorized_response.status_code, interface.SUCCESS)
 
     def test_make_authorized_post_request_when_not_logged_in(self):
         response = Response()
-        response.status_code = C.SUCCESS
+        response.status_code = interface.SUCCESS
         post_mock = Mock(return_value=response)
         requests.post = post_mock
 
-        authorized_response =\
-            self.trade_api._make_authorized_request(
-                'post', 'ResourceURL')
+        authorized_response = self.trade_api.make_authorized_request(self.trade_api.post_path, 'ResourceURL')
 
         self.get_access_token_mock.assert_called_once()
         self.assertEqual(self.trade_api.access_token, FIXTURE_ACCESS_TOKEN)
 
-        post_mock.assert_called_once_with(
-            'ResourceURL', headers={'Authorization': 'Bearer SomeAccessToken'})
-        self.assertEqual(authorized_response.status_code, C.SUCCESS)
-
-    def test_make_authorized_invalid_request_when_not_logged_in(self):
-        with self.assertRaises(AssertionError):
-            self.trade_api._make_authorized_request(
-                'WrongType',
-                'ResourceURL')
-
-        self.get_access_token_mock.assert_not_called()
-        self.assertIsNone(self.trade_api.access_token)
+        post_mock.assert_called_once_with(self.trade_api.api_url + 'ResourceURL',
+                                          headers={'Authorization': 'Bearer SomeAccessToken'})
+        self.assertEqual(authorized_response.status_code, interface.SUCCESS)
 
     def test_make_authorized_get_request_when_logged_in(self):
         self.assertIsNone(self.trade_api.access_token)
         self.trade_api.login()
 
         response = Response()
-        response.status_code = C.SUCCESS
+        response.status_code = interface.SUCCESS
         get_mock = Mock(return_value=response)
         requests.get = get_mock
 
-        authorized_response =\
-            self.trade_api._make_authorized_request(
-                'get', 'ResourceURL')
+        authorized_response = self.trade_api.make_authorized_request(self.trade_api.get_path, 'ResourceURL')
 
         self.get_access_token_mock.assert_called_once()
         self.assertEqual(self.trade_api.access_token, FIXTURE_ACCESS_TOKEN)
 
-        get_mock.assert_called_once_with(
-            'ResourceURL',
-            headers={'Authorization': 'Bearer SomeAccessToken'})
-        self.assertEqual(authorized_response.status_code, C.SUCCESS)
+        get_mock.assert_called_once_with(self.trade_api.api_url + 'ResourceURL', headers={'Authorization': 'Bearer SomeAccessToken'})
+        self.assertEqual(authorized_response.status_code, interface.SUCCESS)
 
     def test_make_authorized_post_request_when_logged_in(self):
         self.assertIsNone(self.trade_api.access_token)
+        self.trade_api.get_access_token = self.get_access_token_mock
         self.trade_api.login()
 
         response = Response()
-        response.status_code = C.SUCCESS
+        response.status_code = interface.SUCCESS
         post_mock = Mock(return_value=response)
         requests.post = post_mock
+        # self.trade_api.post_path = post_mock
 
-        authorized_response =\
-            self.trade_api._make_authorized_request(
-                'post',
-                'ResourceURL')
+        authorized_response = self.trade_api.make_authorized_request(self.trade_api.post_path, 'ResourceURL')
 
         self.get_access_token_mock.assert_called_once()
         self.assertEqual(self.trade_api.access_token, FIXTURE_ACCESS_TOKEN)
 
-        post_mock.assert_called_once_with(
-            'ResourceURL',
-            headers={'Authorization': 'Bearer SomeAccessToken'})
-        self.assertEqual(authorized_response.status_code, C.SUCCESS)
-
-    def test_make_authorized_invalid_request_when_logged_in(self):
-        self.assertIsNone(self.trade_api.access_token)
-        self.trade_api.login()
-
-        with self.assertRaises(AssertionError):
-            self.trade_api._make_authorized_request(
-                'WrongType',
-                'ResourceURL')
-
-        self.get_access_token_mock.assert_called_once()
-        self.assertEqual(self.trade_api.access_token, FIXTURE_ACCESS_TOKEN)
+        post_mock.assert_called_once_with(self.trade_api.api_url + 'ResourceURL', headers={'Authorization': 'Bearer SomeAccessToken'})
+        self.assertEqual(authorized_response.status_code, interface.SUCCESS)
 
     def test_make_authorized_get_request_when_token_expired(self):
         self.assertIsNone(self.trade_api.access_token)
         self.trade_api.login()
 
         response = Response()
-        response.status_code = C.SUCCESS
+        response.status_code = interface.SUCCESS
         get_mock = Mock(return_value=response)
         requests.get = get_mock
 
-        authorized_response =\
-            self.trade_api._make_authorized_request(
-                'get',
-                'ResourceURL')
+        authorized_response = self.trade_api.make_authorized_request(self.trade_api.get_path, 'ResourceURL')
 
         self.assertEqual(self.get_access_token_mock.call_count, 1)
         self.assertEqual(self.trade_api.access_token, FIXTURE_ACCESS_TOKEN)
 
-        get_mock.assert_called_with(
-            'ResourceURL', headers={'Authorization': 'Bearer SomeAccessToken'})
+        get_mock.assert_called_with(self.trade_api.api_url + 'ResourceURL',
+                                    headers={'Authorization': 'Bearer SomeAccessToken'})
         self.assertEqual(get_mock.call_count, FIXTURE_INSTRUMENT_ID)
-        self.assertEqual(authorized_response.status_code, C.SUCCESS)
+        self.assertEqual(authorized_response.status_code, interface.SUCCESS)
 
     def test_make_authorized_post_request_when_token_expired(self):
         self.assertIsNone(self.trade_api.access_token)
         self.trade_api.login()
 
         response = Response()
-        response.status_code = C.SUCCESS
+        response.status_code = interface.SUCCESS
         post_mock = Mock(return_value=response)
         requests.post = post_mock
 
-        authorized_response = self.trade_api._make_authorized_request('post', 'ResourceURL')
+        authorized_response = self.trade_api.make_authorized_request(self.trade_api.post_path, 'ResourceURL')
 
         self.assertEqual(self.get_access_token_mock.call_count, 1)
         self.assertEqual(self.trade_api.access_token, FIXTURE_ACCESS_TOKEN)
 
-        post_mock.assert_called_with(
-            'ResourceURL',
-            headers={'Authorization': 'Bearer SomeAccessToken'})
+        post_mock.assert_called_with(self.trade_api.api_url + 'ResourceURL',
+                                     headers={'Authorization': 'Bearer SomeAccessToken'})
         self.assertEqual(post_mock.call_count, 1)
-        self.assertEqual(authorized_response.status_code, C.SUCCESS)
+        self.assertEqual(authorized_response.status_code, interface.SUCCESS)

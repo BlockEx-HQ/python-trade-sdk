@@ -1,0 +1,27 @@
+# Cache
+/.pytest_cache
+__pycache__
+
+.travis.yml
+# IDE
+.project
+.pydevproject
+
+# Python
+*.pyc
+*.egg-info/
+dist/
+build/
+_build/
+
+# coverage
+.coverage
+cover/
+
+/GPATH
+/GRTAGS
+/GTAGS
+/TAGS
+/cscope.files
+/cscope.out
+/.venv

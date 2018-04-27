@@ -1,5 +1,5 @@
 # BlockEx Trade API SDK
-_v0.0.3_
+_v0.0.4_
 
 ## Description
 BlockEx Trade API SDK is a Python client package for the Trade API
@@ -15,7 +15,7 @@ can generally be grouped into four categories:
  - Placing/cancelling orders
  - Receiving trade events
 
-[Documentation](http://blockex.trade-sdk.readthedocs.org/en/latest/index.html)
+[Documentation](http://blockextrade-sdk.readthedocs.org/en/latest/index.html)
 
 # License
 [![License](http://img.shields.io/badge/Licence-MIT-brightgreen.svg)](LICENSE)

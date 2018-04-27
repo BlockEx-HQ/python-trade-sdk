@@ -1,10 +1,9 @@
 import os
 from unittest import TestCase
-from requests import RequestException
 
+from blockex.tradeapi import interface
 from blockex.tradeapi.tradeapi import BlockExTradeApi
-from blockex.tradeapi import C
-
+from requests import RequestException
 
 FIXTURE_BAD_PASSWORD = 'BadPassword'
 FIXTURE_BAD_API_ID = '67935ee1-7c36-4367-843a-0c66d92bea0d'
@@ -36,7 +35,6 @@ class TestTradeApiLoginLogout(TestTradeApi):
         self.assertIsNotNone(self.client.access_token)
 
         self.client.logout()
-
         self.assertIsNone(self.client.access_token)
 
 
@@ -49,8 +47,8 @@ class TestTradeApiGetOrders(TestTradeApi):
     def test_successful_get_orders_with_filter(self):
         get_orders_response = self.client.get_orders(
             FIXTURE_INSTRUMENT_ID,
-            C.OrderType.LIMIT, C.OfferType.BID,
-            [C.OrderStatus.PENDING, C.OrderStatus.PLACED],
+            interface.OrderType.LIMIT, interface.OfferType.BID,
+            [interface.OrderStatus.PENDING, interface.OrderStatus.PLACED],
             True, 50)
 
         self.assertIsNotNone(get_orders_response)
@@ -71,8 +69,8 @@ class TestTradeApiGetMarketOrders(TestTradeApi):
     def test_successful_get_market_orders_with_filter(self):
         get_market_orders_response = self.client.get_market_orders(
             FIXTURE_INSTRUMENT_ID,
-            C.OrderType.LIMIT, C.OfferType.BID,
-            [C.OrderStatus.PENDING, C.OrderStatus.PLACED], 5)
+            interface.OrderType.LIMIT, interface.OfferType.BID,
+            [interface.OrderStatus.PENDING, interface.OrderStatus.PLACED], 5)
 
         self.assertIsNotNone(get_market_orders_response)
 
@@ -86,28 +84,29 @@ class TestTradeApiGetMarketOrders(TestTradeApi):
 class TestTradeApiCreateOrder(TestTradeApi):
     def test_successful_create_order(self):
         instrument = self.client.get_trader_instruments()[0]
-        self.client.create_order(C.OfferType.BID, C.OrderType.LIMIT,
+        self.client.create_order(interface.OfferType.BID, interface.OrderType.LIMIT,
                                  instrument['id'], 5.2, 0.3)
 
     def test_unsuccessful_create_order(self):
         with self.assertRaises(RequestException):
-            self.client.create_order(C.OfferType.BID, C.OrderType.LIMIT,
+            self.client.create_order(interface.OfferType.BID, interface.OrderType.LIMIT,
                                      -1, 5.2, 0.3)
 
 
 class TestTradeApiCancelOrder(TestTradeApi):
     def test_successful_cancel_order(self):
         instrument = self.client.get_trader_instruments()[0]
-        self.client.create_order(C.OfferType.BID, C.OrderType.LIMIT,
+        self.client.create_order(interface.OfferType.BID, interface.OrderType.LIMIT,
                                  instrument['id'],
                                  5.2, 0.3)
 
         # Gets orders in statuses Pending, Placed or PartiallyExecuted
         orders = self.client.get_orders(
             instrument['id'],
-            status=[C.OrderStatus.PENDING, C.OrderStatus.PLACED, C.OrderStatus.PARTEXECUTED],
+            status=[interface.OrderStatus.PENDING, interface.OrderStatus.PLACED, interface.OrderStatus.PARTEXECUTED],
             max_count=1)
-        if orders.__len__() > 0:
+
+        if orders:
             self.client.cancel_order(orders[0]['orderID'])
 
     def test_unsuccessful_cancel_order(self):
@@ -129,7 +128,7 @@ class TestTradeApiGetTraderInstruments(TestTradeApi):
         get_trader_instruments_response = self.client.get_trader_instruments()
 
         self.assertIsNotNone(get_trader_instruments_response)
-        self.assertGreater(get_trader_instruments_response.__len__(), 0)
+        self.assertGreater(len(get_trader_instruments_response), 0)
 
     def test_unsuccessful_get_trader_instruments(self):
         self.client.password = FIXTURE_BAD_PASSWORD
@@ -142,7 +141,7 @@ class TestTradeApiGetPartnerInstruments(TestTradeApi):
         response = self.client.get_partner_instruments()
 
         self.assertIsNotNone(response)
-        self.assertGreater(response.__len__(), 0)
+        self.assertGreater(len(response), 0)
 
     def test_unsuccessful_get_partner_instruments(self):
         self.client.api_id = FIXTURE_BAD_API_ID

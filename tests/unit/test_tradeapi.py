@@ -434,3 +434,34 @@ class TestTradeApiGetPartnerInstruments:
 
         self.get_mock.assert_called_once_with(
             'https://test.api.url/api/orders/' + 'partnerinstruments?apiID=IncorrectApiID')
+
+
+@pytest.mark.usefixtures('trade_api')
+class TestTradeApiInfo:
+
+    def test_successful_get_trader_info(self):
+        trader_info = """{"traderID": "1",
+             "firstName": "xxx",
+             "lastName": "yyy",
+             "username": "zzz",
+             "email": "xxx@blockex.com",
+             "registrationDate": "2017-12-05T15:37:20.072216+00:00",
+             "currency": "EUR",
+             "currencyID": 2,
+             "language": "English",
+             "languageID": 1,
+             "country": "UK",
+             "countryID": 44,
+             "phone": "+1111111111",
+             "city": "London",
+             "addressLine1": "xxx",
+             "zipCode": "1000"}"""
+
+        self.response._content = trader_info.encode()
+        trader_info_res = self.trade_api.get_trader_info()
+
+        self.get_mock.assert_called_once_with(
+            'https://test.api.url/api/traders/getinfo', headers={'Authorization': 'Bearer SomeAccessToken'})
+
+        info = self.response.json()
+        assert trader_info_res == info

@@ -50,6 +50,7 @@ class ApiPath(Enum):
     LOGIN = 'oauth/token'
     LOGOUT = 'oauth/logout'
 
+    GET_TRADER_INFO = 'api/traders/getinfo'
     GET_ORDERS = 'api/orders/get?'
     GET_MARKET_ORDERS = 'api/orders/getMarketOrders?'
     GET_TRADES_HISTORY = 'api/orders/getTradesHistory?'

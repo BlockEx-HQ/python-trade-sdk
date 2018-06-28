@@ -423,6 +423,50 @@ class BlockExTradeApi(Auth):
             convert_instrument_numbers(instrument)
         return instruments
 
+    def get_trader_info(self):
+        """Get information about the trader.
+
+        :returns: The list of instruments.
+        :rtype: list of dicts. Each element has the following data:\n
+            traderID (int)\n
+            firstName (string)\n
+            lastName (string)\n
+            username (string)\n
+            email (string)\n
+            registrationDate (datetime)\n
+            currency (string)\n
+            currencyID (int)\n
+            language (string)\n
+            languageID (int)\n
+            country (string)\n
+            countryID (int)\n
+            phone (string)\n
+            city (string)\n
+            addressLine1 (string)\n
+            addressLine2 (string)\n
+            zipCode (string)\n
+            dateOfBirth (datetime)\n
+            allowedOTC (bool)\n
+            chatAccess (dict)\n
+            twoFactorAuthEnabled (bool)\n
+            externalKYCStatus (int)\n
+            isSuspended (bool)\n
+            role (dict)\n
+            currenciesTotals (list)
+        :raises: requests.RequestException
+
+        """
+
+        response = self.make_authorized_request(self.get_path, interface.ApiPath.GET_TRADER_INFO.value)
+        if response.status_code == interface.SUCCESS:
+            info = response.json()
+            for currency in info.get('currenciesTotals', {}):
+                convert_trader_info_numbers(currency)
+            return info
+
+        message_raiser('Failed to get the trader information. {error_message}',
+                       error_message=get_error_message(response))
+
 
 def convert_instrument_numbers(instrument):
     """
@@ -466,3 +510,19 @@ def convert_trade_numbers(trade):
     trade['price'] = context.create_decimal(trade['price'])
     trade['totalPrice'] = context.create_decimal(trade['totalPrice'])
     trade['quantity'] = context.create_decimal(trade['quantity'])
+
+
+def convert_trader_info_numbers(currency):
+    """
+    Cast incoming values to int or Decimal
+
+    :param order: dict
+    :return: dict
+
+    """
+
+    context = decimal.getcontext()
+    currency['realBalance'] = context.create_decimal(currency['realBalance'])
+    currency['availableBalance'] = context.create_decimal(currency['availableBalance'])
+    currency['avgBuyPrice'] = context.create_decimal(currency['avgBuyPrice'])
+    currency['totalPortfolioValue'] = context.create_decimal(currency['totalPortfolioValue'])

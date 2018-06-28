@@ -31,6 +31,50 @@ class TestTradeApiLoginLogout:
 
 
 @pytest.mark.usefixtures('client')
+class TestTradeApiInfo:
+
+    @pytest.fixture(autouse=True)
+    def trade_info_struct(self):
+        self.trade_type_check = {'traderID': str,
+                                 'firstName': str,
+                                 'lastName': str,
+                                 'username': str,
+                                 'email': str,
+                                 'registrationDate': str,
+                                 'currency': str,
+                                 'currencyID': int,
+                                 'language': str,
+                                 'languageID': int,
+                                 'country': str,
+                                 'countryID': int,
+                                 'currenciesTotals': list}
+
+        self.trade_info_currency = {'currencyID': int,
+                                    'currencyName': str,
+                                    'isCrypto': bool,
+                                    'realBalance': decimal.Decimal,
+                                    'availableBalance': decimal.Decimal,
+                                    'avgBuyPrice': decimal.Decimal,
+                                    'totalPortfolioValue': decimal.Decimal}
+
+    def test_successful_get_trade_info(self):
+        get_trade_info_response = self.client.get_trader_info()
+        assert get_trade_info_response is not None
+
+        for key, val_type in self.trade_type_check.items():
+            assert isinstance(get_trade_info_response.get(key), val_type)
+
+        for currency in get_trade_info_response['currenciesTotals']:
+            for key, val_type in self.trade_info_currency.items():
+                assert isinstance(currency.get(key), val_type)
+
+    def test_unsuccessful_get_trade_info(self):
+        self.client.password = FIXTURE_BAD_PASSWORD
+        with pytest.raises(RequestException):
+            self.client.get_trader_info()
+
+
+@pytest.mark.usefixtures('client')
 class TestTradeApiGetOrders:
     def test_successful_get_orders_without_filter(self):
         get_orders_response = self.client.get_orders()

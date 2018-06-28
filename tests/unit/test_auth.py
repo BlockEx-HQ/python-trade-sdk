@@ -15,6 +15,7 @@ FIXTURE_USERNAME = "CorrectUsername"
 FIXTURE_PASSWORD = "CorrectPassword"
 FIXTURE_BAD_PASSWORD = "bad_password"
 
+
 class TestTradeApi(TestCase):
     def setUp(self):
         self.get_access_token_mock = Mock(return_value={
@@ -26,6 +27,7 @@ class TestTradeApi(TestCase):
             username=FIXTURE_USERNAME, password=FIXTURE_PASSWORD)
 
         self.trade_api.get_access_token = self.get_access_token_mock
+
 
 class TestTradeApiLogin(TestCase):
     def setUp(self):
@@ -108,3 +110,109 @@ class TestTradeApiLogout(TestTradeApi):
         self.assertIsNone(self.trade_api.access_token)
         self.trade_api.logout()
         post_mock.assert_not_called()
+
+
+class TestTradeApiMakeAuthorizedRequest(TestTradeApi):
+    def test_make_authorized_get_request_when_not_logged_in(self):
+        response = Response()
+        response.status_code = interface.SUCCESS
+        get_mock = Mock(return_value=response)
+        requests.get = get_mock
+
+        authorized_response = self.trade_api.make_authorized_request(self.trade_api.get_path, 'ResourceURL')
+
+        self.get_access_token_mock.assert_called_once()
+        self.assertEqual(self.trade_api.access_token, FIXTURE_ACCESS_TOKEN)
+
+        get_mock.assert_called_once_with(self.trade_api.api_url + 'ResourceURL',
+                                         headers={'Authorization': 'Bearer SomeAccessToken'})
+        self.assertEqual(authorized_response.status_code, interface.SUCCESS)
+
+    def test_make_authorized_post_request_when_not_logged_in(self):
+        response = Response()
+        response.status_code = interface.SUCCESS
+        post_mock = Mock(return_value=response)
+        requests.post = post_mock
+
+        authorized_response = self.trade_api.make_authorized_request(self.trade_api.post_path, 'ResourceURL')
+
+        self.get_access_token_mock.assert_called_once()
+        self.assertEqual(self.trade_api.access_token, FIXTURE_ACCESS_TOKEN)
+
+        post_mock.assert_called_once_with(self.trade_api.api_url + 'ResourceURL',
+                                          headers={'Authorization': 'Bearer SomeAccessToken'})
+        self.assertEqual(authorized_response.status_code, interface.SUCCESS)
+
+    def test_make_authorized_get_request_when_logged_in(self):
+        self.assertIsNone(self.trade_api.access_token)
+        self.trade_api.login()
+
+        response = Response()
+        response.status_code = interface.SUCCESS
+        get_mock = Mock(return_value=response)
+        requests.get = get_mock
+
+        authorized_response = self.trade_api.make_authorized_request(self.trade_api.get_path, 'ResourceURL')
+
+        self.get_access_token_mock.assert_called_once()
+        self.assertEqual(self.trade_api.access_token, FIXTURE_ACCESS_TOKEN)
+
+        get_mock.assert_called_once_with(self.trade_api.api_url + 'ResourceURL', headers={'Authorization': 'Bearer SomeAccessToken'})
+        self.assertEqual(authorized_response.status_code, interface.SUCCESS)
+
+    def test_make_authorized_post_request_when_logged_in(self):
+        self.assertIsNone(self.trade_api.access_token)
+        self.trade_api.get_access_token = self.get_access_token_mock
+        self.trade_api.login()
+
+        response = Response()
+        response.status_code = interface.SUCCESS
+        post_mock = Mock(return_value=response)
+        requests.post = post_mock
+        # self.trade_api.post_path = post_mock
+
+        authorized_response = self.trade_api.make_authorized_request(self.trade_api.post_path, 'ResourceURL')
+
+        self.get_access_token_mock.assert_called_once()
+        self.assertEqual(self.trade_api.access_token, FIXTURE_ACCESS_TOKEN)
+
+        post_mock.assert_called_once_with(self.trade_api.api_url + 'ResourceURL', headers={'Authorization': 'Bearer SomeAccessToken'})
+        self.assertEqual(authorized_response.status_code, interface.SUCCESS)
+
+    def test_make_authorized_get_request_when_token_expired(self):
+        self.assertIsNone(self.trade_api.access_token)
+        self.trade_api.login()
+
+        response = Response()
+        response.status_code = interface.SUCCESS
+        get_mock = Mock(return_value=response)
+        requests.get = get_mock
+
+        authorized_response = self.trade_api.make_authorized_request(self.trade_api.get_path, 'ResourceURL')
+
+        self.assertEqual(self.get_access_token_mock.call_count, 1)
+        self.assertEqual(self.trade_api.access_token, FIXTURE_ACCESS_TOKEN)
+
+        get_mock.assert_called_with(self.trade_api.api_url + 'ResourceURL',
+                                    headers={'Authorization': 'Bearer SomeAccessToken'})
+        self.assertEqual(get_mock.call_count, FIXTURE_INSTRUMENT_ID)
+        self.assertEqual(authorized_response.status_code, interface.SUCCESS)
+
+    def test_make_authorized_post_request_when_token_expired(self):
+        self.assertIsNone(self.trade_api.access_token)
+        self.trade_api.login()
+
+        response = Response()
+        response.status_code = interface.SUCCESS
+        post_mock = Mock(return_value=response)
+        requests.post = post_mock
+
+        authorized_response = self.trade_api.make_authorized_request(self.trade_api.post_path, 'ResourceURL')
+
+        self.assertEqual(self.get_access_token_mock.call_count, 1)
+        self.assertEqual(self.trade_api.access_token, FIXTURE_ACCESS_TOKEN)
+
+        post_mock.assert_called_with(self.trade_api.api_url + 'ResourceURL',
+                                     headers={'Authorization': 'Bearer SomeAccessToken'})
+        self.assertEqual(post_mock.call_count, 1)
+        self.assertEqual(authorized_response.status_code, interface.SUCCESS)

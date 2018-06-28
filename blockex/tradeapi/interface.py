@@ -36,6 +36,15 @@ class OfferType(Enum):
     ASK = 'Ask'
 
 
+class SortBy(Enum):
+    """SortBy types"""
+    CURRENCY = "currency"
+    DATE = "date"
+    PRICE = "price"
+    QUANTITY = "quantity"
+    TOTAL = "total"
+
+
 class ApiPath(Enum):
     """Api paths"""
     LOGIN = 'oauth/token'

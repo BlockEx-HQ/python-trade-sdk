@@ -1,13 +1,14 @@
+import decimal
 import os
-from unittest import TestCase
+from unittest import skip, TestCase
 
 from blockex.tradeapi import interface
 from blockex.tradeapi.tradeapi import BlockExTradeApi
 from requests import RequestException
 
 FIXTURE_BAD_PASSWORD = 'BadPassword'
-FIXTURE_BAD_API_ID = '67935ee1-7c36-4367-843a-0c66d92bea0d'
-FIXTURE_INSTRUMENT_ID = 1
+FIXTURE_BAD_API_ID = 'xxx'
+FIXTURE_INSTRUMENT_ID = 4
 
 
 # Integration tests
@@ -26,7 +27,6 @@ class TestTradeApiLoginLogout(TestTradeApi):
 
     def test_unauthorized_login(self):
         self.client.password = FIXTURE_BAD_PASSWORD
-
         with self.assertRaises(RequestException):
             self.client.login()
 
@@ -41,7 +41,6 @@ class TestTradeApiLoginLogout(TestTradeApi):
 class TestTradeApiGetOrders(TestTradeApi):
     def test_successful_get_orders_without_filter(self):
         get_orders_response = self.client.get_orders()
-
         self.assertIsNotNone(get_orders_response)
 
     def test_successful_get_orders_with_filter(self):
@@ -55,15 +54,13 @@ class TestTradeApiGetOrders(TestTradeApi):
 
     def test_unsuccessful_get_orders(self):
         self.client.password = FIXTURE_BAD_PASSWORD
-
         with self.assertRaises(RequestException):
             self.client.get_orders()
 
 
 class TestTradeApiGetMarketOrders(TestTradeApi):
     def test_successful_get_market_orders_without_filter(self):
-        get_market_orders_response = self.client.get_market_orders(1)
-
+        get_market_orders_response = self.client.get_market_orders(FIXTURE_INSTRUMENT_ID)
         self.assertIsNotNone(get_market_orders_response)
 
     def test_successful_get_market_orders_with_filter(self):
@@ -76,9 +73,45 @@ class TestTradeApiGetMarketOrders(TestTradeApi):
 
     def test_unsuccessful_get_market_orders(self):
         self.client.api_id = FIXTURE_BAD_API_ID
-
         with self.assertRaises(RequestException):
-            self.client.get_market_orders(1)
+            self.client.get_market_orders(FIXTURE_INSTRUMENT_ID)
+
+
+class TestTradeApiGetTradesHistory(TestTradeApi):
+    def test_successful_get_trades_history_without_filter(self):
+        get_trades_history_response = self.client.get_trades_history()
+        self.assertIsNotNone(get_trades_history_response)
+
+    def test_successful_get_trades_history_with_filter(self):
+        get_trades_history_response = self.client.get_trades_history(
+            instrument_id=FIXTURE_INSTRUMENT_ID, sort_by=interface.SortBy.DATE)
+
+        self.assertIsNotNone(get_trades_history_response)
+
+    @skip
+    def test_unsuccessful_get_trades_history(self):
+        #TODO: Remove skip after BACKEND-1416 task
+        self.client.api_id = FIXTURE_BAD_API_ID
+        with self.assertRaises(RequestException):
+            self.client.get_trades_history()
+
+
+class TestTradeApiGetLatestPrice(TestTradeApi):
+    def test_successful_get_trades_history_without_filter(self):
+        get_latest_price_response = self.client.get_latest_price(FIXTURE_INSTRUMENT_ID)
+        self.assertIsNotNone(get_latest_price_response)
+        self.assertTrue(isinstance(get_latest_price_response, decimal.Decimal))
+
+    def test_successful_get_trades_history_with_filter(self):
+        get_latest_price_response = self.client.get_latest_price(instrument_id=FIXTURE_INSTRUMENT_ID)
+        self.assertIsNotNone(get_latest_price_response)
+
+    @skip
+    def test_unsuccessful_get_trades_history(self):
+        #TODO: Remove skip after BACKEND-1416 task
+        self.client.api_id = FIXTURE_BAD_API_ID
+        with self.assertRaises(RequestException):
+            self.client.get_latest_price(FIXTURE_INSTRUMENT_ID)
 
 
 class TestTradeApiCreateOrder(TestTradeApi):
@@ -116,7 +149,7 @@ class TestTradeApiCancelOrder(TestTradeApi):
 
 class TestTradeApiCancelAllOrders(TestTradeApi):
     def test_successful_cancel_all_orders(self):
-        self.client.cancel_all_orders(1)
+        self.client.cancel_all_orders(FIXTURE_INSTRUMENT_ID)
 
     def test_unsuccessful_cancel_all_orders(self):
         with self.assertRaises(RequestException):

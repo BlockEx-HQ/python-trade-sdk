@@ -170,24 +170,75 @@ class BlockExTradeApi(Auth):
 
         """
 
-        data = {
-            'ApiID': self.api_id,
-            'InstrumentID': instrument_id,
-            "SortDesc": "true",
-            "SortBy": "date",
-            "PageSize": "1",
-        }
-
         #TODO: querying full history is a silly way to retrieve latest price
+        trades = self.get_trades_history(instrument_id=instrument_id, sort_by=interface.SortBy.DATE,
+                                         sort_desc=True, page_size=1)
+        return head(trades.get('trades'), default={}).get('price')
+
+    def get_trades_history(self,
+                         instrument_id=None,
+                         currency_id=None,
+                         date_from=None,
+                         date_to=None,
+                         sort_by=None,
+                         sort_desc=None,
+                         page_size=None,
+                         page_index=None):
+        """Gets trades history for given instrument.
+
+        :param instrument_id: Instrument identifier. Use get_trader_instruments()
+            to retrieve list of available instruments and their IDs. Optional.
+        :type instrument_id: int
+        :param currency_id: Currency id. Optional.
+        :type instrument_id: int
+        :param date_from: Start date for the trading history. Optional.
+        :type date_from: datetime
+        :param date_to: End date for trading history. Optional.
+        :type date_to: datetime
+        :param sort_by: Sort expression - supported values
+            "currency", "date", "price", "quantity", "total". Optional.
+        :type sort_by: SortBy
+        :param sort_desc: Set to True to sort descending. Optional.
+        :type sort_desc: bool
+        :param page_size: Size of the current page of the result set to be returned. Default value is 10. Optional.
+        :type page_size: int
+        :param page_index: Index of the page of result set to be returned. Default value is 0. Optional.
+        :type page_index: int
+
+        :returns: The dict of Trades, PageSize, PageIndex, PageCount.
+        :rtype: list of dicts. Each element has the following data:\n
+            trades (list of dict)\n
+            pageSize (int)\n
+            pageIndex (int)\n
+            pageCount (int)
+        :raises: requests.RequestException
+        """
+
+        data = DictConditional(apiID=self.api_id)
+        data["currencyID"] = currency_id
+        data["instrumentID"] = instrument_id
+        data["dateFrom"] = date_from
+        data["dateTo"] = date_to
+        data["sortDesc"] = sort_desc
+        data["pageSize"] = page_size
+        data["pageIndex"] = page_index
+
+        if sort_by is not None:
+            if not isinstance(sort_by, interface.SortBy):
+                raise ValueError('sort_by must be of type SortBy')
+            data['sortBy'] = sort_by.value
+
         headers = {"Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"}
         response = self.post_path(interface.ApiPath.GET_TRADES_HISTORY.value, data=urlencode(data), headers=headers)
 
         if response.status_code != interface.SUCCESS:
-            message_raiser('Failed to get the market latest price. {error_message}',
+            message_raiser('Failed to get trades history. {error_message}',
                            error_message=get_error_message(response))
 
         trades = response.json()
-        return head(trades.get('trades'), default=[]).get('price')
+        for trade in trades.get('trades', {}):
+            convert_trade_numbers(trade)
+        return trades
 
     def get_highest_bid_order(self, instrument_id):
         """Gets highest bid price for given instrument.
@@ -399,3 +450,19 @@ def convert_order_numbers(order):
     order['initialQuantity'] = context.create_decimal(order['initialQuantity'])
     order['price'] = context.create_decimal(order['price'])
     order['quantity'] = context.create_decimal(order['quantity'])
+
+
+def convert_trade_numbers(trade):
+    """
+    Cast incoming values to int or Decimal
+
+    :param order: dict
+    :return: dict
+
+    """
+
+    context = decimal.getcontext()
+    trade['tradeID'] = int(trade['tradeID'])
+    trade['price'] = context.create_decimal(trade['price'])
+    trade['totalPrice'] = context.create_decimal(trade['totalPrice'])
+    trade['quantity'] = context.create_decimal(trade['quantity'])

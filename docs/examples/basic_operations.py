@@ -1,11 +1,13 @@
 #!/usr/bin/env python
+import os
+
 from blockex.tradeapi import interface
 from blockex.tradeapi.tradeapi import BlockExTradeApi
 
-API_URL = 'https://api.blockex.com/'
-API_ID = '7c11fb8e-f744-47ee-aec2-9da5eb83ad84'
-USERNAME = ''
-PASSWORD = ''
+API_URL = os.environ.get('BLOCKEX_TEST_TRADEAPI_URL')
+API_ID = os.environ.get('BLOCKEX_TEST_TRADEAPI_ID')
+USERNAME = os.environ.get('BLOCKEX_TEST_TRADEAPI_USERNAME')
+PASSWORD = os.environ.get('BLOCKEX_TEST_TRADEAPI_PASSWORD')
 
 
 def main():

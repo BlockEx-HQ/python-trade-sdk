@@ -1,3 +1,10 @@
+### 0.0.4
+- Add get_trades_history method
+- Unittest were migrated to pytest
+
+### 0.0.3
+- Bug fixing
+
 #### 0.0.2
 - Refactor implementation
 - There were added more logical layers

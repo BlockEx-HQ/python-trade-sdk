@@ -1,54 +1,31 @@
 import sys
-from unittest import TestCase
 
-import requests
+import pytest
+from requests import RequestException
 from blockex.tradeapi import interface, tradeapi
-from mock import Mock
 
 if sys.version_info >= (3, 0):
     from urllib.parse import urlencode  # pragma: no cover
 else:
     from urllib import urlencode  # pragma: no cover
 
-Response = requests.Response
-RequestException = requests.RequestException
-
 FIXTURE_INSTRUMENT_ID = 1
-FIXTURE_ACCESS_TOKEN = "SomeAccessToken"
-FIXTURE_API_URL = "https://test.api.url/"
-FIXTURE_API_ID = "CorrectApiID"
-FIXTURE_USERNAME = "CorrectUsername"
-FIXTURE_PASSWORD = "CorrectPassword"
-FIXTURE_BAD_PASSWORD = "bad_password"
 
 
-# Unit tests
-class TestTradeApi(TestCase):
-    def setUp(self):
-        self.get_access_token_mock = Mock(return_value={
-            'access_token': FIXTURE_ACCESS_TOKEN,
-            'expires_in': 86399,
-        })
-        self.trade_api = tradeapi.BlockExTradeApi(
-            api_url=FIXTURE_API_URL, api_id=FIXTURE_API_ID,
-            username=FIXTURE_USERNAME, password=FIXTURE_PASSWORD)
-
-        self.trade_api.get_access_token = self.get_access_token_mock
-
-
-class TestTradeApiInit(TestTradeApi):
+@pytest.mark.usefixtures('trade_api')
+class TestTradeApiInit:
     def test_init(self):
-        self.assertEqual(self.trade_api.api_url, FIXTURE_API_URL)
-        self.assertEqual(self.trade_api.api_id, FIXTURE_API_ID)
-        self.assertEqual(self.trade_api.username, FIXTURE_USERNAME)
-        self.assertEqual(self.trade_api.password, FIXTURE_PASSWORD)
-        self.assertIsNone(self.trade_api.access_token)
+        assert self.trade_api.api_url == pytest.FIXTURE_API_URL
+        assert self.trade_api.api_id == pytest.FIXTURE_API_ID
+        assert self.trade_api.username == pytest.FIXTURE_USERNAME
+        assert self.trade_api.password == pytest.FIXTURE_PASSWORD
 
 
-class TestTradeApiGetOrders(TestTradeApi):
-    def setUp(self):
-        super().setUp()
+@pytest.mark.usefixtures('trade_api')
+class TestTradeApiGetOrders:
 
+    @pytest.fixture(autouse=True)
+    def orders(self):
         self.orders_list = """
             [{"orderID": "32592",
             "price": "13.40",
@@ -71,13 +48,8 @@ class TestTradeApiGetOrders(TestTradeApi):
             "instrumentID": 1,
             "trades": null}]"""
 
-        self.response = Response()
-        self.response.status_code = interface.SUCCESS
-        self.response._content = self.orders_list.encode()
-        self.get_mock = Mock(return_value=self.response)
-        requests.get = self.get_mock
-
     def test_successful_get_orders_without_filter(self):
+        self.response._content = self.orders_list.encode()
         get_orders_response = self.trade_api.get_orders()
 
         self.get_mock.assert_called_once_with(
@@ -87,9 +59,10 @@ class TestTradeApiGetOrders(TestTradeApi):
         orders = self.response.json()
         for order in orders:
             tradeapi.convert_order_numbers(order)
-        self.assertEqual(get_orders_response, orders)
+        assert get_orders_response == orders
 
     def test_successful_get_orders_with_filter(self):
+        self.response._content = self.orders_list.encode()
         get_orders_response = self.trade_api.get_orders(
             FIXTURE_INSTRUMENT_ID, interface.OrderType.LIMIT, interface.OfferType.BID,
             [interface.OrderStatus.PENDING, interface.OrderStatus.PLACED],
@@ -110,13 +83,14 @@ class TestTradeApiGetOrders(TestTradeApi):
         orders = self.response.json()
         for order in orders:
             tradeapi.convert_order_numbers(order)
-        self.assertEqual(get_orders_response, orders)
+        assert get_orders_response == orders
 
     def test_unsuccessful_get_orders(self):
+        self.response._content = self.orders_list.encode()
         self.response.status_code = interface.BAD_REQUEST
         self.response._content = '{"message": "Unknown trader"}'.encode()
 
-        with self.assertRaises(RequestException):
+        with pytest.raises(RequestException):
             self.trade_api.get_orders()
 
         self.get_mock.assert_called_once_with(
@@ -124,10 +98,11 @@ class TestTradeApiGetOrders(TestTradeApi):
             headers={'Authorization': 'Bearer SomeAccessToken'})
 
 
-class TestTradeApiGetMarketOrders(TestTradeApi):
-    def setUp(self):
-        super().setUp()
+@pytest.mark.usefixtures('trade_api')
+class TestTradeApiGetMarketOrders:
 
+    @pytest.fixture(autouse=True)
+    def market_orders(self):
         self.market_orders_list = """
             [{"orderID": "31635",
             "price": "5.00",
@@ -150,13 +125,8 @@ class TestTradeApiGetMarketOrders(TestTradeApi):
             "instrumentID": 1,
             "trades": null}]"""
 
-        self.response = Response()
-        self.response.status_code = interface.SUCCESS
-        self.response._content = self.market_orders_list.encode()
-        self.get_mock = Mock(return_value=self.response)
-        requests.get = self.get_mock
-
     def test_successful_get_market_orders_without_filter(self):
+        self.response._content = self.market_orders_list.encode()
         get_market_orders_response = self.trade_api.get_market_orders(FIXTURE_INSTRUMENT_ID)
 
         data = {
@@ -171,9 +141,10 @@ class TestTradeApiGetMarketOrders(TestTradeApi):
         orders = self.response.json()
         for order in orders:
             tradeapi.convert_order_numbers(order)
-        self.assertEqual(get_market_orders_response, orders)
+        assert get_market_orders_response == orders
 
     def test_successful_get_market_orders_with_filter(self):
+        self.response._content = self.market_orders_list.encode()
         get_market_orders_response = self.trade_api.get_market_orders(
             FIXTURE_INSTRUMENT_ID, interface.OrderType.LIMIT, interface.OfferType.BID,
             [interface.OrderStatus.PENDING, interface.OrderStatus.PLACED],
@@ -195,15 +166,16 @@ class TestTradeApiGetMarketOrders(TestTradeApi):
         orders = self.response.json()
         for order in orders:
             tradeapi.convert_order_numbers(order)
-        self.assertEqual(get_market_orders_response, orders)
+        assert get_market_orders_response == orders
 
     def test_unsuccessful_get_market_orders(self):
+        self.response._content = self.market_orders_list.encode()
         self.response.status_code = interface.BAD_REQUEST
         self.response._content = '{"message": "Invalid partner API id"}'.encode()
 
         self.trade_api.api_id = 'IncorrectApiID'
 
-        with self.assertRaises(RequestException):
+        with pytest.raises(RequestException):
             self.trade_api.get_market_orders(FIXTURE_INSTRUMENT_ID)
 
         data = {
@@ -216,11 +188,12 @@ class TestTradeApiGetMarketOrders(TestTradeApi):
             'https://test.api.url/api/orders/getMarketOrders?' + query_string)
 
 
-class TestTradeApiGetTradesHistory(TestTradeApi):
-    def setUp(self):
-        super().setUp()
+@pytest.mark.usefixtures('trade_api')
+class TestTradeApiGetTradesHistory:
 
-        self.trades_history = """
+    @pytest.fixture(autouse=True)
+    def trades_history(self):
+        self.trades_history_list = """
             {
                 "trades": [
                     {"tradeID": 1,
@@ -249,14 +222,9 @@ class TestTradeApiGetTradesHistory(TestTradeApi):
                 "totalCount": 2
             }
             """
-        self.headers={'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'}
-        self.response = Response()
-        self.response.status_code = interface.SUCCESS
-        self.response._content = self.trades_history.encode()
-        self.post_mock = Mock(return_value=self.response)
-        requests.post = self.post_mock
 
     def test_successful_get_trades_history_without_filter(self):
+        self.response._content = self.trades_history_list.encode()
         get_trades_history_response = self.trade_api.get_trades_history()
 
         data = {'apiID': 'CorrectApiID'}
@@ -264,12 +232,13 @@ class TestTradeApiGetTradesHistory(TestTradeApi):
         self.post_mock.assert_called_once_with(
             'https://test.api.url/api/orders/getTradesHistory?',
             data=urlencode(data),
-            headers=self.headers)
+            headers={'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'})
 
         orders = self.response.json()
-        self.assertEqual(get_trades_history_response, orders)
+        assert get_trades_history_response == orders
 
     def test_successful_get_trades_history_with_filter(self):
+        self.response._content = self.trades_history_list.encode()
         get_trades_history_response = self.trade_api.get_trades_history(
             instrument_id=FIXTURE_INSTRUMENT_ID, currency_id=1, sort_by=interface.SortBy.DATE)
 
@@ -283,18 +252,19 @@ class TestTradeApiGetTradesHistory(TestTradeApi):
         self.post_mock.assert_called_once_with(
             'https://test.api.url/api/orders/getTradesHistory?',
             data=urlencode(data),
-            headers=self.headers)
+            headers={'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'})
 
         orders = self.response.json()
-        self.assertEqual(get_trades_history_response, orders)
+        assert get_trades_history_response == orders
 
     def test_unsuccessful_get_trades_history(self):
+        self.response._content = self.trades_history_list.encode()
         self.response.status_code = interface.BAD_REQUEST
         self.response._content = '{"message": "Invalid partner API id"}'.encode()
 
         self.trade_api.api_id = 'IncorrectApiID'
 
-        with self.assertRaises(RequestException):
+        with pytest.raises(RequestException):
             self.trade_api.get_trades_history(FIXTURE_INSTRUMENT_ID)
 
         data = {
@@ -305,23 +275,17 @@ class TestTradeApiGetTradesHistory(TestTradeApi):
         self.post_mock.assert_called_once_with(
             'https://test.api.url/api/orders/getTradesHistory?',
             data=urlencode(data),
-            headers=self.headers)
+            headers={'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'})
 
 
-class TestTradeApiCreateOrder(TestTradeApi):
-    def setUp(self):
-        super().setUp()
-
-        self.response = Response()
-        self.response.status_code = interface.SUCCESS
-        self.post_mock = Mock(return_value=self.response)
-        requests.post = self.post_mock
+@pytest.mark.usefixtures('trade_api')
+class TestTradeApiCreateOrder:
 
     def test_unsuccessful_create_order(self):
         self.response.status_code = interface.BAD_REQUEST
         self.response._content = '{"message": "Unknown trader"}'.encode()
 
-        with self.assertRaises(RequestException):
+        with pytest.raises(RequestException):
             self.trade_api.create_order(interface.OfferType.BID, interface.OrderType.LIMIT,
                                         FIXTURE_INSTRUMENT_ID, 15.2, 3.7)
 
@@ -339,14 +303,8 @@ class TestTradeApiCreateOrder(TestTradeApi):
             headers={'Authorization': 'Bearer SomeAccessToken'})
 
 
-class TestTradeApiCancelOrder(TestTradeApi):
-    def setUp(self):
-        super().setUp()
-
-        self.response = Response()
-        self.response.status_code = interface.SUCCESS
-        self.post_mock = Mock(return_value=self.response)
-        requests.post = self.post_mock
+@pytest.mark.usefixtures('trade_api')
+class TestTradeApiCancelOrder:
 
     def test_successful_cancel_order(self):
         self.trade_api.cancel_order(32598)
@@ -359,7 +317,7 @@ class TestTradeApiCancelOrder(TestTradeApi):
         self.response.status_code = interface.BAD_REQUEST
         self.response._content = '{"message": "Unknown trader"}'.encode()
 
-        with self.assertRaises(RequestException):
+        with pytest.raises(RequestException):
             self.trade_api.cancel_order(32598)
 
         self.post_mock.assert_called_once_with(
@@ -367,14 +325,8 @@ class TestTradeApiCancelOrder(TestTradeApi):
             headers={'Authorization': 'Bearer SomeAccessToken'})
 
 
-class TestTradeApiCancelAllOrders(TestTradeApi):
-    def setUp(self):
-        super().setUp()
-
-        self.response = Response()
-        self.response.status_code = interface.SUCCESS
-        self.post_mock = Mock(return_value=self.response)
-        requests.post = self.post_mock
+@pytest.mark.usefixtures('trade_api')
+class TestTradeApiCancelAllOrders:
 
     def test_successful_cancel_all_orders(self):
         self.trade_api.cancel_all_orders(FIXTURE_INSTRUMENT_ID)
@@ -387,7 +339,7 @@ class TestTradeApiCancelAllOrders(TestTradeApi):
         self.response.status_code = interface.BAD_REQUEST
         self.response._content = '{"message": "Unknown trader"}'.encode()
 
-        with self.assertRaises(RequestException):
+        with pytest.raises(RequestException):
             self.trade_api.cancel_all_orders(FIXTURE_INSTRUMENT_ID)
 
         self.post_mock.assert_called_once_with(
@@ -395,14 +347,8 @@ class TestTradeApiCancelAllOrders(TestTradeApi):
             headers={'Authorization': 'Bearer SomeAccessToken'})
 
 
-class TestTradeApiGetTraderInstruments(TestTradeApi):
-    def setUp(self):
-        super().setUp()
-
-        self.response = Response()
-        self.response.status_code = interface.SUCCESS
-        self.get_mock = Mock(return_value=self.response)
-        requests.get = self.get_mock
+@pytest.mark.usefixtures('trade_api')
+class TestTradeApiGetTraderInstruments:
 
     def test_successful_get_trader_instruments(self):
         instruments_list = """
@@ -431,13 +377,13 @@ class TestTradeApiGetTraderInstruments(TestTradeApi):
         instruments = self.response.json()
         for instrument in instruments:
             tradeapi.convert_instrument_numbers(instrument)
-        self.assertEqual(get_trader_instruments_response, instruments)
+        assert get_trader_instruments_response == instruments
 
     def test_unsuccessful_get_trader_instruments(self):
         self.response.status_code = interface.BAD_REQUEST
         self.response._content = '{"message": "Unknown trader"}'.encode()
 
-        with self.assertRaises(RequestException):
+        with pytest.raises(RequestException):
             self.trade_api.get_trader_instruments()
 
         self.get_mock.assert_called_once_with(
@@ -445,14 +391,8 @@ class TestTradeApiGetTraderInstruments(TestTradeApi):
             headers={'Authorization': 'Bearer SomeAccessToken'})
 
 
-class TestTradeApiGetPartnerInstruments(TestTradeApi):
-    def setUp(self):
-        super().setUp()
-
-        self.response = Response()
-        self.response.status_code = interface.SUCCESS
-        self.get_mock = Mock(return_value=self.response)
-        requests.get = self.get_mock
+@pytest.mark.usefixtures('trade_api')
+class TestTradeApiGetPartnerInstruments:
 
     def test_successful_get_partner_instruments(self):
         instruments_list = """
@@ -481,14 +421,15 @@ class TestTradeApiGetPartnerInstruments(TestTradeApi):
         instruments = self.response.json()
         for instrument in instruments:
             tradeapi.convert_instrument_numbers(instrument)
-        self.assertEqual(partner_instruments_response, instruments)
+        assert partner_instruments_response == instruments
 
     def test_unsuccessful_get_partner_instruments(self):
         self.response.status_code = interface.BAD_REQUEST
         self.response._content = '{"message": "Invalid partner"}'.encode()
 
         self.trade_api.api_id = 'IncorrectApiID'
-        with self.assertRaises(RequestException):
+
+        with pytest.raises(RequestException):
             self.trade_api.get_partner_instruments()
 
         self.get_mock.assert_called_once_with(

@@ -1,82 +1,53 @@
 import pytest
+
 import requests
 from blockex.tradeapi import interface, tradeapi
 
-Response = requests.Response
-RequestException = requests.RequestException
-
-FIXTURE_INSTRUMENT_ID = 1
-FIXTURE_ACCESS_TOKEN = "SomeAccessToken"
-FIXTURE_API_URL = "https://test.api.url/"
-FIXTURE_API_ID = "CorrectApiID"
-FIXTURE_USERNAME = "CorrectUsername"
-FIXTURE_PASSWORD = "CorrectPassword"
-FIXTURE_BAD_PASSWORD = "bad_password"
-
 
 @pytest.mark.usefixtures('mocker')
+@pytest.mark.usefixtures('trade_api')
 class TestTradeApiLogin:
-
-    @pytest.fixture(autouse=True)
-    def auth(self, mocker):
-        self.get_access_token_mock = mocker.Mock(return_value={
-            'access_token': FIXTURE_ACCESS_TOKEN,
-            'expires_in': 86399,
-        })
-        self.trade_api = tradeapi.BlockExTradeApi(
-            api_url=FIXTURE_API_URL, api_id=FIXTURE_API_ID,
-            username=FIXTURE_USERNAME, password=FIXTURE_PASSWORD)
-
-        self.old_get_access_token = self.trade_api.get_access_token
-        self.trade_api.get_access_token = self.get_access_token_mock
-
-        self.response = Response()
-        self.response.status_code = interface.SUCCESS
-        self.response._content = '{"access_token":"SomeAccessToken", "expires_in":86399}'.encode()
-        self.post_mock = mocker.Mock(return_value=self.response)
-        requests.post = self.post_mock
-        self.get_mock = mocker.Mock(return_value=self.response)
-        requests.get = self.get_mock
 
     def test_authorized_login(self):
         # Restore native get_access_token
+        self.response._content = '{"access_token":"SomeAccessToken", "expires_in":86399}'.encode()
         self.trade_api.get_access_token = self.old_get_access_token
         login_response = self.trade_api.login()
 
         self.post_mock.assert_called_once_with(
-            FIXTURE_API_URL + "oauth/token",
+            pytest.FIXTURE_API_URL + "oauth/token",
             data={
                 'grant_type': 'password',
-                'username': FIXTURE_USERNAME,
-                'password': FIXTURE_PASSWORD,
-                'client_id': FIXTURE_API_ID,
+                'username': pytest.FIXTURE_USERNAME,
+                'password': pytest.FIXTURE_PASSWORD,
+                'client_id': pytest.FIXTURE_API_ID,
             })
 
-        assert login_response == FIXTURE_ACCESS_TOKEN
+        assert login_response == pytest.FIXTURE_ACCESS_TOKEN
 
     def test_unauthorized_login(self):
         unauthorized_trade_api = tradeapi.BlockExTradeApi(
-            api_url=FIXTURE_API_URL, api_id=FIXTURE_API_ID,
-            username=FIXTURE_USERNAME, password=FIXTURE_BAD_PASSWORD)
+            api_url=pytest.FIXTURE_API_URL, api_id=pytest.FIXTURE_API_ID,
+            username=pytest.FIXTURE_USERNAME, password=pytest.FIXTURE_BAD_PASSWORD)
 
         self.response.status_code = interface.BAD_REQUEST
         self.response._content = '{"error":"invalid_client"}'.encode()
 
-        with pytest.raises(RequestException):
+        with pytest.raises(requests.RequestException):
             unauthorized_trade_api.login()
 
         self.post_mock.assert_called_once_with(
             'https://test.api.url/oauth/token',
             data={
                 'grant_type': 'password',
-                'username': FIXTURE_USERNAME,
-                'password': FIXTURE_BAD_PASSWORD,
-                'client_id': FIXTURE_API_ID
+                'username': pytest.FIXTURE_USERNAME,
+                'password': pytest.FIXTURE_BAD_PASSWORD,
+                'client_id': pytest.FIXTURE_API_ID
             })
 
     def test_logout_when_logged_in(self):
         self.trade_api.login()
-        assert self.trade_api.access_token == FIXTURE_ACCESS_TOKEN
+        assert self.trade_api.access_token == pytest.FIXTURE_ACCESS_TOKEN
 
         self.trade_api.logout()
 
@@ -101,7 +72,7 @@ class TestTradeApiLogin:
         authorized_response = self.trade_api.make_authorized_request(req_method, 'ResourceURL')
 
         self.get_access_token_mock.assert_called_once()
-        assert self.trade_api.access_token == FIXTURE_ACCESS_TOKEN
+        assert self.trade_api.access_token == pytest.FIXTURE_ACCESS_TOKEN
 
         req_mock.assert_called_once_with(self.trade_api.api_url + 'ResourceURL',
                                          headers={'Authorization': 'Bearer SomeAccessToken'})
@@ -118,7 +89,7 @@ class TestTradeApiLogin:
 
         authorized_response = self.trade_api.make_authorized_request(req_method, 'ResourceURL')
 
-        assert self.trade_api.access_token == FIXTURE_ACCESS_TOKEN
+        assert self.trade_api.access_token == pytest.FIXTURE_ACCESS_TOKEN
 
         req_mock.assert_called_once_with(self.trade_api.api_url + 'ResourceURL',
                                          headers={'Authorization': 'Bearer SomeAccessToken'})

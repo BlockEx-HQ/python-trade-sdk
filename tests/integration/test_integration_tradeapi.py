@@ -103,7 +103,7 @@ class TestTradeApiGetTradesHistory(TestTradeApi):
                 self.assertIsInstance(trade.get(key), val_type)
 
     def test_successful_get_trades_history_with_filter(self):
-        prev_trade_date = 0
+        prev_trade_date = None
 
         get_trades_history_response = self.client.get_trades_history(
             instrument_id=FIXTURE_INSTRUMENT_ID, sort_by=interface.SortBy.DATE)
@@ -115,9 +115,10 @@ class TestTradeApiGetTradesHistory(TestTradeApi):
             for key, val_type in self.trade_type_check.items():
                 self.assertIsInstance(trade.get(key), val_type)
 
-            if prev_trade_date == 0:
+            if prev_trade_date is None:
                 prev_trade_date = arrow.get(trade.get('tradeDate')).datetime
             self.assertLessEqual(prev_trade_date, arrow.get(trade.get('tradeDate')).datetime)
+            prev_trade_date = arrow.get(trade.get('tradeDate')).datetime
 
     @skip
     def test_unsuccessful_get_trades_history(self):

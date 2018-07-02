@@ -23,7 +23,7 @@ setup(
     install_requires=install_requires,
     dependency_links=dependency_links,
     extras_require={
-        'test': ['mock', 'pytest', 'pytest-mock'],
+        'test': ['mock', 'pytest', 'pytest-mock', 'arrow'],
     },
     packages=[d[0].replace("/", ".") for d in os.walk("blockex.tradeapi") if not d[0].endswith("__pycache__")],
     project_urls={

@@ -49,7 +49,7 @@ def main():
                                            status=[interface.OrderStatus.PENDING,
                                                    interface.OrderStatus.PLACED],
                                            load_executions=True,
-                                           max_count=5)
+                                           max_count=2)
     print('Trader Orders Filtered >>>', orders_filtered)
 
     # Get market orders unfiltered
@@ -63,10 +63,20 @@ def main():
         order_type=interface.OrderType.LIMIT,
         offer_type=interface.OfferType.BID,
         status=[interface.OrderStatus.PENDING, interface.OrderStatus.PLACED],
-        max_count=5)
+        max_count=2)
     print('Market Orders Filtered >>>', orders)
 
-    # cancel all orders
+    # Get traders history unfiltered
+    trades = trade_api.get_trades_history()
+    print('Trades History >>>', trades)
+
+    # Get traders history filtered
+    trades_filtered = trade_api.get_trades_history(
+        instrument_id=3,
+        sort_by=interface.SortBy.DATE)
+    print('Trades History Filtered >>>', trades_filtered)
+
+    # Cancel all orders
     trade_api.cancel_all_orders(instrument_id=trader_instruments[0]['id'])
 
     # Place order
@@ -76,7 +86,7 @@ def main():
                            price=5.2,
                            quantity=1)
 
-    # get open orders for instrument
+    # Get open orders for instrument
     orders_filtered = trade_api.get_orders(instrument_id=trader_instruments[0]['id'],
                                            status=[interface.OrderStatus.PENDING,
                                                    interface.OrderStatus.PLACED])

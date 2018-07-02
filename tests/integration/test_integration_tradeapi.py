@@ -1,10 +1,12 @@
 import decimal
 import os
-from unittest import skip, TestCase
+from unittest import TestCase, skip
+
+import arrow
+from requests import RequestException
 
 from blockex.tradeapi import interface
 from blockex.tradeapi.tradeapi import BlockExTradeApi
-from requests import RequestException
 
 FIXTURE_BAD_PASSWORD = 'BadPassword'
 FIXTURE_BAD_API_ID = 'xxx'
@@ -78,15 +80,44 @@ class TestTradeApiGetMarketOrders(TestTradeApi):
 
 
 class TestTradeApiGetTradesHistory(TestTradeApi):
+    def setUp(self):
+        super().setUp()
+
+        self.trade_type_check = {'tradeID': int,
+                                 'price': decimal.Decimal,
+                                 'totalPrice': decimal.Decimal,
+                                 'quantity': decimal.Decimal,
+                                 'tradeDate': str,
+                                 'currencyID': int,
+                                 'quoteCurrencyID': int,
+                                 'instrumentID': int}
+
     def test_successful_get_trades_history_without_filter(self):
         get_trades_history_response = self.client.get_trades_history()
         self.assertIsNotNone(get_trades_history_response)
 
+        trades = get_trades_history_response['trades']
+        self.assertEqual(len(trades), 10)
+        for trade in trades:
+            for key, val_type in self.trade_type_check.items():
+                self.assertIsInstance(trade.get(key), val_type)
+
     def test_successful_get_trades_history_with_filter(self):
+        prev_trade_date = 0
+
         get_trades_history_response = self.client.get_trades_history(
             instrument_id=FIXTURE_INSTRUMENT_ID, sort_by=interface.SortBy.DATE)
 
         self.assertIsNotNone(get_trades_history_response)
+        trades = get_trades_history_response['trades']
+        self.assertEqual(len(trades), 10)
+        for trade in trades:
+            for key, val_type in self.trade_type_check.items():
+                self.assertIsInstance(trade.get(key), val_type)
+
+            if prev_trade_date == 0:
+                prev_trade_date = arrow.get(trade.get('tradeDate')).datetime
+            self.assertLessEqual(prev_trade_date, arrow.get(trade.get('tradeDate')).datetime)
 
     @skip
     def test_unsuccessful_get_trades_history(self):

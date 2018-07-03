@@ -1,4 +1,5 @@
 import decimal
+
 import pytest
 
 import arrow

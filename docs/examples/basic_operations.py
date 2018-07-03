@@ -76,6 +76,10 @@ def main():
         sort_by=interface.SortBy.DATE)
     print('Trades History Filtered >>>', trades_filtered)
 
+    # Get trader info
+    trade_info = trade_api.get_trader_info()
+    print('Trades Info >>>', trade_info)
+
     # Cancel all orders
     trade_api.cancel_all_orders(instrument_id=trader_instruments[0]['id'])
 

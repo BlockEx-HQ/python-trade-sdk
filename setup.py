@@ -3,7 +3,7 @@ import sys
 
 from setuptools import setup
 
-version = "0.0.4"
+version = "0.1.0"
 
 dependency_links = []
 install_requires = ['enum34', 'requests']

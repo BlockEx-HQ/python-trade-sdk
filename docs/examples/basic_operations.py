@@ -1,11 +1,13 @@
 #!/usr/bin/env python
+import os
+
 from blockex.tradeapi import interface
 from blockex.tradeapi.tradeapi import BlockExTradeApi
 
-API_URL = 'https://api.blockex.com/'
-API_ID = '7c11fb8e-f744-47ee-aec2-9da5eb83ad84'
-USERNAME = ''
-PASSWORD = ''
+API_URL = os.environ.get('BLOCKEX_TEST_TRADEAPI_URL')
+API_ID = os.environ.get('BLOCKEX_TEST_TRADEAPI_ID')
+USERNAME = os.environ.get('BLOCKEX_TEST_TRADEAPI_USERNAME')
+PASSWORD = os.environ.get('BLOCKEX_TEST_TRADEAPI_PASSWORD')
 
 
 def main():
@@ -47,7 +49,7 @@ def main():
                                            status=[interface.OrderStatus.PENDING,
                                                    interface.OrderStatus.PLACED],
                                            load_executions=True,
-                                           max_count=5)
+                                           max_count=2)
     print('Trader Orders Filtered >>>', orders_filtered)
 
     # Get market orders unfiltered
@@ -61,10 +63,24 @@ def main():
         order_type=interface.OrderType.LIMIT,
         offer_type=interface.OfferType.BID,
         status=[interface.OrderStatus.PENDING, interface.OrderStatus.PLACED],
-        max_count=5)
+        max_count=2)
     print('Market Orders Filtered >>>', orders)
 
-    # cancel all orders
+    # Get traders history unfiltered
+    trades = trade_api.get_trades_history()
+    print('Trades History >>>', trades)
+
+    # Get traders history filtered
+    trades_filtered = trade_api.get_trades_history(
+        instrument_id=3,
+        sort_by=interface.SortBy.DATE)
+    print('Trades History Filtered >>>', trades_filtered)
+
+    # Get trader info
+    trade_info = trade_api.get_trader_info()
+    print('Trades Info >>>', trade_info)
+
+    # Cancel all orders
     trade_api.cancel_all_orders(instrument_id=trader_instruments[0]['id'])
 
     # Place order
@@ -74,7 +90,7 @@ def main():
                            price=5.2,
                            quantity=1)
 
-    # get open orders for instrument
+    # Get open orders for instrument
     orders_filtered = trade_api.get_orders(instrument_id=trader_instruments[0]['id'],
                                            status=[interface.OrderStatus.PENDING,
                                                    interface.OrderStatus.PLACED])

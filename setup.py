@@ -3,16 +3,13 @@ import sys
 
 from setuptools import setup
 
-version = "0.0.4"
+version = "0.1.0"
 
 dependency_links = []
 install_requires = ['enum34', 'requests']
 
 if sys.version_info >= (3, 5, 3):
     install_requires.append('signalr-client-aio')
-
-if sys.version_info >= (2, 7) and sys.version_info < (3, 0):
-    install_requires.append('mock')
 
 setup(
     name='blockex.trade-sdk',
@@ -26,7 +23,7 @@ setup(
     install_requires=install_requires,
     dependency_links=dependency_links,
     extras_require={
-        'test': ['mock', 'pytest'],
+        'test': ['pytest', 'pytest-mock', 'arrow'],
     },
     packages=[d[0].replace("/", ".") for d in os.walk("blockex.tradeapi") if not d[0].endswith("__pycache__")],
     project_urls={

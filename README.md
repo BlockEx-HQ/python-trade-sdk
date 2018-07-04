@@ -1,5 +1,5 @@
 # BlockEx Trade API SDK
-_v0.0.4_
+_v0.1.0_
 
 ## Description
 BlockEx Trade API SDK is a Python client package for the Trade API

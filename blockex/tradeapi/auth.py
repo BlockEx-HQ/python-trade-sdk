@@ -58,6 +58,7 @@ class Auth(ApiClient):
         :returns: The access token of the logged
         :rtype: dict
         :raises: requests.RequestException
+
         """
 
         data = {
@@ -80,8 +81,8 @@ class Auth(ApiClient):
         :returns: The access token of the logged in trader
         :rtype: dict
         :raises: requests.RequestException
-        """
 
+        """
         access_token = self.get_access_token()
         self.access_token = access_token['access_token']
         self.access_token_expires = datetime.datetime.now() + datetime.timedelta(seconds=access_token['expires_in'])
@@ -92,6 +93,7 @@ class Auth(ApiClient):
         Performs a logout when logged in and deletes the stored access token.
 
         :raises: requests.RequestException
+
         """
 
         if self.access_token is not None:

@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import os
 import sys
 from decimal import Decimal
 
@@ -10,10 +11,10 @@ if sys.version_info < (3, 5, 3):
 else:
     from signalr_aio import Connection
 
-API_URL = 'https://api.blockex.com/'
-API_ID = '7c11fb8e-f744-47ee-aec2-9da5eb83ad84'
-USERNAME = ''
-PASSWORD = ''
+API_URL = os.environ.get('BLOCKEX_TEST_TRADEAPI_URL')
+API_ID = os.environ.get('BLOCKEX_TEST_TRADEAPI_ID')
+USERNAME = os.environ.get('BLOCKEX_TEST_TRADEAPI_USERNAME')
+PASSWORD = os.environ.get('BLOCKEX_TEST_TRADEAPI_PASSWORD')
 
 BID_ORDER_PRICE = Decimal(5)
 BID_ORDER_QUANTITY = Decimal(0.5)

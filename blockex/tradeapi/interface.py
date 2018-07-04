@@ -36,11 +36,21 @@ class OfferType(Enum):
     ASK = 'Ask'
 
 
+class SortBy(Enum):
+    """SortBy types"""
+    CURRENCY = "currency"
+    DATE = "date"
+    PRICE = "price"
+    QUANTITY = "quantity"
+    TOTAL = "total"
+
+
 class ApiPath(Enum):
     """Api paths"""
     LOGIN = 'oauth/token'
     LOGOUT = 'oauth/logout'
 
+    GET_TRADER_INFO = 'api/traders/getinfo'
     GET_ORDERS = 'api/orders/get?'
     GET_MARKET_ORDERS = 'api/orders/getMarketOrders?'
     GET_TRADES_HISTORY = 'api/orders/getTradesHistory?'

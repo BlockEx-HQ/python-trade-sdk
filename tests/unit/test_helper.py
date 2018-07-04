@@ -1,30 +1,30 @@
-from unittest import TestCase
+import pytest
 
 from blockex.tradeapi.helper import DictConditional, head
 
 
-class TestDictConditional(TestCase):
+class TestDictConditional:
     def test_new_condition(self):
         dcond = DictConditional(__cond__=lambda x: x != 0)
         dcond["foo"] = 0
-        self.assertTrue("foo" not in dcond)
+        assert "foo" not in dcond
 
         dcond = DictConditional(__cond__=lambda x: x != 0, a=1, b=2)
         dcond["foo"] = 0
-        self.assertTrue("foo" not in dcond)
-        self.assertTrue("a" in dcond and "b" in dcond)
+        assert "foo" not in dcond
+        assert "a" in dcond and "b" in dcond
 
     def test_default_cond_with_definition(self):
         dcond = DictConditional(a=1, b=2)
         dcond["smart_none"] = None
-        self.assertTrue("smart_none" not in dcond)
-        self.assertTrue("a" in dcond and "b" in dcond)
+        assert "smart_none" not in dcond
+        assert "a" in dcond and "b" in dcond
 
 
-class TestGetFirst(TestCase):
+class TestGetFirst:
     def test_head(self):
-        self.assertEqual(head([]), None)
-        self.assertEqual(head(()), None)
+        assert head([]) is None
+        assert head(()) is None
 
-        self.assertEqual(head((), default=[]), [])
-        self.assertEqual(head((1, 2, 3)), 1)
+        assert head((), default=[]) == []
+        assert head((1, 2, 3)) == 1
